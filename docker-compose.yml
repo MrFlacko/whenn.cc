@@ -1,0 +1,13 @@
+services:
+  php:
+    image: php:8.3-apache
+    container_name: linky
+    ports:
+      - "8083:80"
+    volumes:
+      - ./:/var/www/html
+    command: >
+      bash -c "
+      a2enmod rewrite &&
+      sed -i 's/AllowOverride None/AllowOverride All/g' /etc/apache2/apache2.conf &&
+      apache2-foreground"
