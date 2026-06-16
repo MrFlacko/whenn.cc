@@ -18,7 +18,7 @@ Useful for Discord, online friends, gaming sessions, meetings, calls, or anythin
 Create a link with a country, city, date, and time.
 
 When someone opens it, **whenn.cc** shows the original time, their local time, and the countdown.
-It uses the IP address of the person accessing the website to estimate their timezone. From what I've seen it's quite accurate. However if you're using a VPN connection you can manually set the time.
+It uses the IP address of the person accessing the website to estimate their timezone. From what I've seen it's quite accurate. However if you're using a VPN connection you can manually set the timezone.
 
 ---
 
