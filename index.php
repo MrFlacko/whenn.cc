@@ -231,20 +231,73 @@ $jsPath = __DIR__ . '/js/app.js';
     </script>
 
     <header class="topbar">
-        <a class="brand" href="/">whenn.cc</a>
+        <a class="brand" href="/" aria-label="Go to whenn.cc home">whenn.cc</a>
     </header>
 
     <main class="page">
         <section class="hero">
+            <section class="examples examples-card" aria-label="Example times">
+                <div class="section-heading">
+                    <p class="eyebrow">Examples</p>
+                    <h2>Try these links</h2>
+                </div>
+
+<?php
+// Small curated examples across the world. These use the site's URL format.
+$examples = [
+    ['country' => 'us', 'city' => 'new_york', 'label' => 'New York'],
+    ['country' => 'gb', 'city' => 'london', 'label' => 'London'],
+    ['country' => 'jp', 'city' => 'tokyo', 'label' => 'Tokyo'],
+    ['country' => 'au', 'city' => 'sydney', 'label' => 'Sydney'],
+    ['country' => 'ax', 'city' => 'utc', 'label' => 'UTC'],
+];
+
+$nowUtc = new DateTimeImmutable('now', new DateTimeZone('UTC'));
+$tomorrow = $nowUtc->modify('+1 day');
+$dateStr = $tomorrow->format('d-m-Y');
+$timeStr = $nowUtc->format('Hi'); // use current UTC time so examples stay relevant
+?>
+
+                <details class="examples-mobile-accordion">
+                    <summary>
+                        <span>Show example links</span>
+                        <span class="examples-mobile-arrow" aria-hidden="true">›</span>
+                    </summary>
+                    <div class="examples-mobile-list">
+                        <div class="examples-mobile-list-inner">
+<?php
+foreach ($examples as $ex) {
+    $href = sprintf('/%s/%s/%s/%s', $ex['country'], $ex['city'], $dateStr, $timeStr);
+    $displayUrl = htmlspecialchars($href);
+    $label = htmlspecialchars($ex['label']);
+    echo '<a href="' . $displayUrl . '"><span class="ex-label">' . $label . '</span><small class="ex-url">' . $displayUrl . '</small></a>' . "\n";
+}
+?>
+                        </div>
+                    </div>
+                </details>
+
+                <div class="examples-footer">
+<?php
+foreach ($examples as $ex) {
+    $href = sprintf('/%s/%s/%s/%s', $ex['country'], $ex['city'], $dateStr, $timeStr);
+    $displayUrl = htmlspecialchars($href);
+    $label = htmlspecialchars($ex['label']);
+    echo '<a href="' . $displayUrl . '"><span class="ex-label">' . $label . '</span><small class="ex-url">' . $displayUrl . '</small></a>' . "\n";
+}
+?>
+                </div>
+            </section>
+
             <div class="hero-copy">
                 <p class="eyebrow">whenn.cc</p>
                 <h1>Share a time that makes sense everywhere.</h1>
                 <p class="intro">Create a clean link for a meeting, stream, launch, call, or anything else with a fixed time. Pick a country and city, set the date, then send one link that converts automatically for whoever opens it.</p>
 
                 <div class="mini-help" aria-label="How whenn.cc works">
-                    <span><strong>1</strong> Choose a place</span>
-                    <span><strong>2</strong> Set date/time</span>
-                    <span><strong>3</strong> Create & copy</span>
+                    <span><strong>1</strong><em>Place</em></span>
+                    <span><strong>2</strong><em>Time</em></span>
+                    <span><strong>3</strong><em>Copy</em></span>
                 </div>
             </div>
 
@@ -256,7 +309,7 @@ $jsPath = __DIR__ . '/js/app.js';
                     <div class="location" id="eventLocation"><?= htmlspecialchars($displayLocation) ?></div>
                 </div>
 
-                <div class="swap-mark route-only" aria-hidden="true">↓</div>
+                <div class="swap-mark route-only" aria-hidden="true">›</div>
 
                 <div class="clock-column route-only">
                     <span class="date-label" id="localTimeLabel">Your Time</span>
@@ -265,9 +318,26 @@ $jsPath = __DIR__ . '/js/app.js';
                     <div class="location" id="location">Detecting location...</div>
                 </div>
 
-                <div class="countdown route-only" aria-label="Countdown to event">
-                    <span class="date-label">Countdown</span>
-                    <div class="countdown-grid">
+                <div class="timezone-control">
+                    <label>
+                        <span>Your country</span>
+                        <select id="manualCountrySelect"></select>
+                    </label>
+
+                    <label>
+                        <span>Your city / timezone</span>
+                        <select id="manualCitySelect"></select>
+                    </label>
+                </div>
+
+                <div class="countdown-inline" aria-label="Countdown to event">
+                    <div class="countdown-heading">
+                        <span class="countdown-kicker">Countdown</span>
+                        <div class="countdown-heading-row">
+                            <strong class="countdown-title">Event starts in</strong>
+                        </div>
+                    </div>
+                    <div class="countdown-grid-compact">
                         <div>
                             <strong id="countdownDays">--</strong>
                             <span>Days</span>
@@ -285,21 +355,9 @@ $jsPath = __DIR__ . '/js/app.js';
                             <span>Sec</span>
                         </div>
                     </div>
-                    <div class="countdown-status" id="countdownStatus">Until event</div>
-                </div>
-
-                <div class="timezone-control">
-                    <label>
-                        <span>Your country</span>
-                        <select id="manualCountrySelect"></select>
-                    </label>
-
-                    <label>
-                        <span>Your city / timezone</span>
-                        <select id="manualCitySelect"></select>
-                    </label>
                 </div>
             </section>
+
         </section>
 
         <section class="creator" aria-labelledby="creatorTitle">
@@ -323,7 +381,7 @@ $jsPath = __DIR__ . '/js/app.js';
                     <span>Date</span>
                     <input id="dateInput" type="hidden" required>
                     <button class="date-picker-button" id="datePickerButton" type="button">
-                        <span aria-hidden="true">□</span>
+                        <span aria-hidden="true">📅</span>
                         <strong id="datePickerLabel">Select date</strong>
                     </button>
                 </label>
@@ -332,7 +390,7 @@ $jsPath = __DIR__ . '/js/app.js';
                     <span>Time</span>
                     <input id="timeInput" type="hidden" required>
                     <button class="time-picker-button" id="timePickerButton" type="button">
-                        <span aria-hidden="true">◷</span>
+                        <span aria-hidden="true">🕒</span>
                         <strong id="timePickerLabel">--:--</strong>
                     </button>
                 </label>

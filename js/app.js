@@ -44,7 +44,7 @@ let pickerHour = 9;
 let pickerMinute = 0;
 let activeTimezone = getBrowserTimezone();
 let pickerMode = "hour";
-let hourFormat = "24";
+let hourFormat = "12";
 let manualCountries = countries;
 let calendarCursor = new Date();
 let countdownTarget = null;
@@ -237,6 +237,7 @@ function openTimePicker() {
 function closeTimePicker() {
     timePopover.classList.remove("is-open");
     timePopover.setAttribute("aria-hidden", "true");
+    timePickerButton.blur();
 }
 
 function setDateValue(value) {
@@ -294,6 +295,7 @@ function openDatePicker() {
 function closeDatePicker() {
     datePopover.classList.remove("is-open");
     datePopover.setAttribute("aria-hidden", "true");
+    datePickerButton.blur();
 }
 
 function getTimeZoneOffset(date, timezone) {
@@ -400,7 +402,9 @@ function renderCountdown() {
         countdownHours.textContent = "00";
         countdownMinutes.textContent = "00";
         countdownSeconds.textContent = "00";
-        countdownStatus.textContent = "Event started";
+        if (countdownStatus) {
+            countdownStatus.textContent = "Event started";
+        }
         return;
     }
 
@@ -414,7 +418,9 @@ function renderCountdown() {
     countdownHours.textContent = pad(hours);
     countdownMinutes.textContent = pad(minutes);
     countdownSeconds.textContent = pad(seconds);
-    countdownStatus.textContent = "Until event";
+    if (countdownStatus) {
+        countdownStatus.textContent = "Until event";
+    }
 }
 
 function renderError() {
@@ -564,6 +570,78 @@ async function populateManualTimezones() {
     updateManualTimezone();
 }
 
+function initExampleAccordion() {
+    const accordion = document.querySelector(".examples-mobile-accordion");
+
+    if (!accordion) {
+        return;
+    }
+
+    const summary = accordion.querySelector("summary");
+    const panel = accordion.querySelector(".examples-mobile-list");
+
+    if (!summary || !panel) {
+        return;
+    }
+
+    let isAnimating = false;
+    let isClosing = false;
+
+    function openPanel() {
+        accordion.open = true;
+        panel.style.height = "0px";
+
+        requestAnimationFrame(() => {
+            panel.style.height = `${panel.scrollHeight}px`;
+        });
+    }
+
+    function closePanel() {
+        panel.style.height = `${panel.scrollHeight}px`;
+
+        requestAnimationFrame(() => {
+            panel.style.height = "0px";
+        });
+    }
+
+    panel.addEventListener("transitionend", (event) => {
+        if (event.propertyName !== "height") {
+            return;
+        }
+
+        if (isClosing) {
+            accordion.open = false;
+            panel.style.height = "0px";
+            isClosing = false;
+        } else if (accordion.open) {
+            panel.style.height = "auto";
+        } else {
+            panel.style.height = "0px";
+        }
+
+        isAnimating = false;
+    });
+
+    summary.addEventListener("click", (event) => {
+        event.preventDefault();
+
+        if (isAnimating) {
+            return;
+        }
+
+        isAnimating = true;
+
+        if (accordion.open) {
+            isClosing = true;
+            closePanel();
+            return;
+        }
+
+        isClosing = false;
+        openPanel();
+    });
+}
+
 function setInitialFormValues() {
     const now = new Date();
     const match = findZoneByTimezone(getBrowserTimezone());
@@ -600,21 +678,70 @@ async function copyGeneratedLink() {
         return;
     }
 
+    createCopyButton.classList.remove("is-flashing");
+    createCopyButton.classList.remove("is-success");
+    createCopyButton.getBoundingClientRect();
+    createCopyButton.classList.add("is-flashing");
+
     try {
         await navigator.clipboard.writeText(createdLink.href);
-        createCopyButton.textContent = "Copied";
+        createCopyButton.textContent = "Copied!";
+        createCopyButton.classList.add("is-success");
     } catch (error) {
         createCopyButton.textContent = "Link Created";
     }
 
     setTimeout(() => {
         createCopyButton.textContent = "Create & Copy";
-    }, 1400);
+        createCopyButton.classList.remove("is-flashing");
+        createCopyButton.classList.remove("is-success");
+    }, 900);
+}
+
+function openLinkedSelect(select) {
+    if (!select) {
+        return;
+    }
+
+    select.focus({ preventScroll: true });
+    select.classList.add("is-active");
+
+    if (typeof select.showPicker === "function") {
+        try {
+            select.showPicker();
+            return;
+        } catch (error) {}
+    }
+}
+
+function initSelectInteractions() {
+    for (const select of document.querySelectorAll("select")) {
+        select.addEventListener("focus", () => {
+            select.classList.add("is-active");
+        });
+
+        select.addEventListener("blur", () => {
+            select.classList.remove("is-active");
+        });
+
+        select.addEventListener("change", () => {
+            window.setTimeout(() => {
+                select.classList.remove("is-active");
+                select.blur();
+            }, 0);
+        });
+
+        select.addEventListener("keydown", (event) => {
+            if (event.key === "Escape" || event.key === "Tab") {
+                select.classList.remove("is-active");
+            }
+        });
+    }
 }
 
 function initTimePicker() {
     setPickerMode("hour");
-    setHourFormat("24");
+    setHourFormat("12");
     timePickerButton.addEventListener("click", openTimePicker);
     hourDial.addEventListener("pointerdown", startDialDrag);
     document.getElementById("minuteDial").addEventListener("pointerdown", startDialDrag);
@@ -696,12 +823,14 @@ function initCreator() {
     setInitialFormValues();
     initDatePicker();
     initTimePicker();
+    initSelectInteractions();
     updateCreator();
 
     countrySelect.addEventListener("change", () => {
         populateCities();
         updateCreator();
         renderEventPreview();
+        openLinkedSelect(citySelect);
     });
 
     citySelect.addEventListener("change", () => {
@@ -717,6 +846,7 @@ function initCreator() {
     manualCountrySelect.addEventListener("change", () => {
         populateCities(manualCountrySelect.value, manualCitySelect, manualCountries);
         updateManualTimezone();
+        openLinkedSelect(manualCitySelect);
     });
     manualCitySelect.addEventListener("change", updateManualTimezone);
 
@@ -728,6 +858,7 @@ function initCreator() {
 
 function init() {
     initCreator();
+    initExampleAccordion();
 
     if (!linkyData.hasEvent) {
         renderHomepageClock();
