@@ -27,7 +27,7 @@ It uses the IP address of the person accessing the website to estimate their tim
 |---|---|
 | Sydney, Australia | [https://whenn.cc/au/sydney/16-06-2042/1745](https://whenn.cc/au/sydney/16-06-2042/1745) |
 | Australia country-only | [https://whenn.cc/au/16-06-2042/1745](https://whenn.cc/au/16-06-2042/1745) |
-| Cebu, Philippines | [https://whenn.cc/ph/cebu/16-06-2042/1745](https://whenn.cc/ph/cebu/16-06-2042/1745) |
+| Manila, Philippines | [https://whenn.cc/ph/manila/16-06-2042/1745](https://whenn.cc/ph/manila/16-06-2042/1745) |
 | New York, United States | [https://whenn.cc/us/new-york/16-06-2042/1745](https://whenn.cc/us/new-york/16-06-2042/1745) |
 | London, United Kingdom | [https://whenn.cc/gb/london/16-06-2042/1745](https://whenn.cc/gb/london/16-06-2042/1745) |
 | Tokyo, Japan | [https://whenn.cc/jp/tokyo/16-06-2042/1745](https://whenn.cc/jp/tokyo/16-06-2042/1745) |
