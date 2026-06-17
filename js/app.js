@@ -54,7 +54,23 @@ let calendarCursor = new Date();
 let countdownTarget = null;
 let lockedScrollY = 0;
 let wheelSyncing = false;
-const wheelScrollTimers = new WeakMap();
+let hourWheelGesture = null;
+let hourWheelPosition = 0;
+let hourWheelAnimationFrame = null;
+let suppressHourClick = false;
+let minuteWheelGesture = null;
+let minuteWheelPosition = 0;
+let minuteWheelAnimationFrame = null;
+let suppressMinuteClick = false;
+const hourWheelItemGap = 42;
+const hourWheelDragThreshold = 4;
+const hourWheelCenterThreshold = 0.16;
+const hourWheelMomentumMs12 = 235;
+const hourWheelMomentumMs24 = 255;
+const minuteWheelItemGap = 34;
+const minuteWheelDragThreshold = 4;
+const minuteWheelCenterThreshold = 0.14;
+const minuteWheelMomentumMs = 300;
 
 function pad(value) {
     return String(value).padStart(2, "0");
@@ -221,57 +237,315 @@ function populateTimeWheel(wheel, values) {
     }
 }
 
+function mobileHourValues() {
+    return Array.from({ length: hourFormat === "12" ? 12 : 24 }, (_, index) => (
+        hourFormat === "12" ? index + 1 : index
+    ));
+}
+
+function mobileDisplayHour() {
+    return hourFormat === "12" ? ((pickerHour + 11) % 12) + 1 : pickerHour;
+}
+
 function populateMobileHourWheel() {
     populateTimeWheel(
         mobileHourWheel,
-        Array.from({ length: hourFormat === "12" ? 12 : 24 }, (_, index) => ({
-            value: hourFormat === "12" ? index + 1 : index,
-            label: pad(hourFormat === "12" ? index + 1 : index)
+        mobileHourValues().map((value) => ({
+            value,
+            label: pad(value)
         }))
     );
+    setHourWheelPositionFromValue(mobileDisplayHour());
 }
 
-function selectedWheelValue(wheel) {
-    const buttons = [...wheel.querySelectorAll("button")];
-    const center = wheel.scrollTop + (wheel.clientHeight / 2);
-    let selected = buttons[0];
-    let selectedDistance = Infinity;
+function mobileMinuteValues() {
+    return Array.from({ length: 60 }, (_, index) => index);
+}
 
-    for (const button of buttons) {
-        const buttonCenter = button.offsetTop + (button.offsetHeight / 2);
-        const distance = Math.abs(buttonCenter - center);
+function clamp(value, min, max) {
+    return Math.max(min, Math.min(max, value));
+}
 
-        if (distance < selectedDistance) {
-            selected = button;
-            selectedDistance = distance;
-        }
+function projectedWheelTarget(position, velocity, values, momentumMs, maxItems, snapThreshold = 0.5) {
+    const coastDistance = clamp(velocity * momentumMs, -maxItems, maxItems);
+    const projected = position + coastDistance;
+    const lower = Math.floor(projected);
+    const upper = Math.ceil(projected);
+    const fraction = projected - lower;
+
+    if (velocity > 0.001) {
+        return clamp(fraction >= snapThreshold ? upper : lower, 0, values.length - 1);
     }
 
-    return Number(selected?.dataset.value || 0);
+    if (velocity < -0.001) {
+        return clamp(fraction <= 1 - snapThreshold ? lower : upper, 0, values.length - 1);
+    }
+
+    return clamp(Math.round(projected), 0, values.length - 1);
 }
 
-function scrollWheelToValue(wheel, value, behavior = "auto") {
-    const button = wheel.querySelector(`[data-value="${value}"]`);
+function smootherStep(progress) {
+    return progress * progress * progress * (progress * ((progress * 6) - 15) + 10);
+}
 
-    if (!button) {
+function hourWheelMomentumMs() {
+    return hourFormat === "24" ? hourWheelMomentumMs24 : hourWheelMomentumMs12;
+}
+
+function hourWheelMaxVelocity() {
+    return hourFormat === "24" ? 0.033 : 0.028;
+}
+
+function hourWheelPixelsPerHour() {
+    return hourFormat === "24" ? 41 : 48;
+}
+
+function renderHourWheel() {
+    const selectedIndex = Math.round(hourWheelPosition);
+
+    for (const [index, button] of [...mobileHourWheel.querySelectorAll("button")].entries()) {
+        const offset = index - hourWheelPosition;
+        const distance = Math.abs(offset);
+        const centered = index === selectedIndex && distance <= hourWheelCenterThreshold;
+        const scale = 0.94 + (Math.max(0, 1 - distance) * 0.12);
+
+        button.classList.toggle("is-selected", centered);
+        button.style.transform = `translateY(calc(-50% + ${offset * hourWheelItemGap}px)) scale(${scale})`;
+        button.style.opacity = String(Math.max(0, 1 - (distance * 0.2)));
+        button.style.pointerEvents = distance <= 2.4 ? "auto" : "none";
+    }
+}
+
+function animateHourWheelTo(targetPosition, commit = true, initialVelocity = 0) {
+    if (hourWheelAnimationFrame) {
+        cancelAnimationFrame(hourWheelAnimationFrame);
+    }
+
+    const values = mobileHourValues();
+    const clampedTarget = Math.max(0, Math.min(values.length - 1, targetPosition));
+    const startPosition = hourWheelPosition;
+    const distance = Math.abs(clampedTarget - startPosition);
+    const duration = hourFormat === "24"
+        ? clamp(110 + (distance * 36) - (Math.abs(initialVelocity) * 580), 100, 215)
+        : clamp(120 + (distance * 50) - (Math.abs(initialVelocity) * 700), 110, 230);
+    let startedAt = 0;
+
+    function step(now) {
+        if (!startedAt) {
+            startedAt = now;
+        }
+
+        const progress = clamp((now - startedAt) / duration, 0, 1);
+        const eased = smootherStep(progress);
+
+        hourWheelPosition = startPosition + ((clampedTarget - startPosition) * eased);
+
+        if (progress >= 1) {
+            hourWheelPosition = clampedTarget;
+            hourWheelAnimationFrame = null;
+            renderHourWheel();
+
+            if (commit) {
+                setHourFromMobileValue(values[Math.round(hourWheelPosition)]);
+            }
+
+            return;
+        }
+
+        renderHourWheel();
+        hourWheelAnimationFrame = requestAnimationFrame(step);
+    }
+
+    hourWheelAnimationFrame = requestAnimationFrame(step);
+}
+
+function coastHourWheel(releaseVelocity) {
+    if (hourWheelAnimationFrame) {
+        cancelAnimationFrame(hourWheelAnimationFrame);
+    }
+
+    const values = mobileHourValues();
+    const maxCoast = Math.max(2.2, values.length * 0.22);
+    const targetPosition = projectedWheelTarget(
+        hourWheelPosition,
+        releaseVelocity,
+        values,
+        hourWheelMomentumMs(),
+        maxCoast
+    );
+    const direction = Math.sign(targetPosition - hourWheelPosition);
+    let velocity = clamp(releaseVelocity, -hourWheelMaxVelocity(), hourWheelMaxVelocity());
+    let lastAt = 0;
+
+    if (!direction || Math.abs(velocity) < 0.001) {
+        animateHourWheelTo(targetPosition);
         return;
     }
 
-    const top = button.offsetTop - ((wheel.clientHeight - button.offsetHeight) / 2);
-    wheel.scrollTo({ top, behavior });
+    function step(now) {
+        const elapsed = lastAt ? Math.min(32, now - lastAt) : 16;
+        lastAt = now;
+
+        velocity *= Math.exp(-elapsed / hourWheelMomentumMs());
+        hourWheelPosition = clamp(hourWheelPosition + (velocity * elapsed), 0, values.length - 1);
+
+        const passedTarget = direction > 0 ? hourWheelPosition >= targetPosition : hourWheelPosition <= targetPosition;
+
+        if (passedTarget || Math.abs(velocity) < 0.001) {
+            animateHourWheelTo(targetPosition, true, velocity);
+            return;
+        }
+
+        renderHourWheel();
+        hourWheelAnimationFrame = requestAnimationFrame(step);
+    }
+
+    hourWheelAnimationFrame = requestAnimationFrame(step);
 }
 
-function updateWheelSelection(wheel, value) {
-    for (const button of wheel.querySelectorAll("button")) {
-        button.classList.remove("is-selected");
+function renderMinuteWheel() {
+    const selectedIndex = Math.round(minuteWheelPosition);
+
+    for (const [index, button] of [...mobileMinuteWheel.querySelectorAll("button")].entries()) {
+        const offset = index - minuteWheelPosition;
+        const distance = Math.abs(offset);
+        const centered = index === selectedIndex && distance <= minuteWheelCenterThreshold;
+        const scale = 0.94 + (Math.max(0, 1 - distance) * 0.12);
+
+        button.classList.toggle("is-selected", centered);
+        button.style.transform = `translateY(calc(-50% + ${offset * minuteWheelItemGap}px)) scale(${scale})`;
+        button.style.opacity = String(Math.max(0, 1 - (distance * 0.08)));
+        button.style.pointerEvents = distance <= 3.2 ? "auto" : "none";
+    }
+}
+
+function animateMinuteWheelTo(targetPosition, commit = true, initialVelocity = 0) {
+    if (minuteWheelAnimationFrame) {
+        cancelAnimationFrame(minuteWheelAnimationFrame);
     }
 
-    for (const button of wheel.querySelectorAll("button")) {
-        if (Number(button.dataset.value) === value) {
-            button.classList.add("is-selected");
-            break;
+    const values = mobileMinuteValues();
+    const clampedTarget = Math.max(0, Math.min(values.length - 1, targetPosition));
+    const startPosition = minuteWheelPosition;
+    const distance = Math.abs(clampedTarget - startPosition);
+    const duration = clamp(155 + (distance * 24) - (Math.abs(initialVelocity) * 420), 140, 320);
+    let startedAt = 0;
+
+    function step(now) {
+        if (!startedAt) {
+            startedAt = now;
         }
+
+        const progress = clamp((now - startedAt) / duration, 0, 1);
+        const eased = smootherStep(progress);
+
+        minuteWheelPosition = startPosition + ((clampedTarget - startPosition) * eased);
+
+        if (progress >= 1) {
+            minuteWheelPosition = clampedTarget;
+            minuteWheelAnimationFrame = null;
+            renderMinuteWheel();
+
+            if (commit) {
+                setMinuteFromMobileValue(values[Math.round(minuteWheelPosition)]);
+            }
+
+            return;
+        }
+
+        renderMinuteWheel();
+        minuteWheelAnimationFrame = requestAnimationFrame(step);
     }
+
+    minuteWheelAnimationFrame = requestAnimationFrame(step);
+}
+
+function coastMinuteWheel(releaseVelocity) {
+    if (minuteWheelAnimationFrame) {
+        cancelAnimationFrame(minuteWheelAnimationFrame);
+    }
+
+    const values = mobileMinuteValues();
+    const targetPosition = projectedWheelTarget(
+        minuteWheelPosition,
+        releaseVelocity,
+        values,
+        minuteWheelMomentumMs,
+        values.length * 0.2,
+        0.78
+    );
+    const direction = Math.sign(targetPosition - minuteWheelPosition);
+    let velocity = clamp(releaseVelocity, -0.038, 0.038);
+    let lastAt = 0;
+
+    if (!direction || Math.abs(velocity) < 0.001) {
+        animateMinuteWheelTo(targetPosition);
+        return;
+    }
+
+    function step(now) {
+        const elapsed = lastAt ? Math.min(32, now - lastAt) : 16;
+        lastAt = now;
+
+        velocity *= Math.exp(-elapsed / minuteWheelMomentumMs);
+        minuteWheelPosition = clamp(minuteWheelPosition + (velocity * elapsed), 0, values.length - 1);
+
+        const passedTarget = direction > 0 ? minuteWheelPosition >= targetPosition : minuteWheelPosition <= targetPosition;
+
+        if (passedTarget || Math.abs(velocity) < 0.001) {
+            animateMinuteWheelTo(targetPosition, true, velocity);
+            return;
+        }
+
+        renderMinuteWheel();
+        minuteWheelAnimationFrame = requestAnimationFrame(step);
+    }
+
+    minuteWheelAnimationFrame = requestAnimationFrame(step);
+}
+
+function setMinuteWheelPositionFromValue(value, animate = false) {
+    const values = mobileMinuteValues();
+    const index = values.indexOf(value);
+
+    if (index === -1) {
+        return;
+    }
+
+    if (animate) {
+        animateMinuteWheelTo(index, false);
+        return;
+    }
+
+    if (minuteWheelAnimationFrame) {
+        cancelAnimationFrame(minuteWheelAnimationFrame);
+        minuteWheelAnimationFrame = null;
+    }
+
+    minuteWheelPosition = index;
+    renderMinuteWheel();
+}
+
+function setHourWheelPositionFromValue(value, animate = false) {
+    const values = mobileHourValues();
+    const index = values.indexOf(value);
+
+    if (index === -1) {
+        return;
+    }
+
+    if (animate) {
+        animateHourWheelTo(index, false);
+        return;
+    }
+
+    if (hourWheelAnimationFrame) {
+        cancelAnimationFrame(hourWheelAnimationFrame);
+        hourWheelAnimationFrame = null;
+    }
+
+    hourWheelPosition = index;
+    renderHourWheel();
 }
 
 function updateMobileWheels(scroll = false) {
@@ -279,69 +553,152 @@ function updateMobileWheels(scroll = false) {
         return;
     }
 
-    const displayHour = hourFormat === "12" ? ((pickerHour + 11) % 12) + 1 : pickerHour;
+    const displayHour = mobileDisplayHour();
 
-    updateWheelSelection(mobileHourWheel, displayHour);
-    updateWheelSelection(mobileMinuteWheel, pickerMinute);
+    setHourWheelPositionFromValue(displayHour, scroll);
+    setMinuteWheelPositionFromValue(pickerMinute, scroll);
 
     if (scroll) {
         wheelSyncing = true;
-        scrollWheelToValue(mobileHourWheel, displayHour);
-        scrollWheelToValue(mobileMinuteWheel, pickerMinute);
         requestAnimationFrame(() => {
             wheelSyncing = false;
         });
     }
 }
 
-function setTimeFromMobileWheels() {
-    const selectedHour = selectedWheelValue(mobileHourWheel);
-    const minute = selectedWheelValue(mobileMinuteWheel);
+function setHourFromMobileValue(value) {
     const base = pickerHour >= 12 ? 12 : 0;
-    const hour = hourFormat === "12" ? base + (selectedHour % 12) : selectedHour;
-    setTimeValue(hour, minute);
+    setTimeValue(hourFormat === "12" ? base + (value % 12) : value, pickerMinute);
 }
 
-function handleWheelScroll(wheel) {
-    if (wheelSyncing) {
+function setMinuteFromMobileValue(value) {
+    setTimeValue(pickerHour, value);
+}
+
+function startHourWheelGesture(event) {
+    if (hourWheelAnimationFrame) {
+        cancelAnimationFrame(hourWheelAnimationFrame);
+        hourWheelAnimationFrame = null;
+    }
+
+    const touch = event.touches[0];
+
+    hourWheelGesture = {
+        active: true,
+        moved: false,
+        startPosition: hourWheelPosition,
+        startY: touch.clientY,
+        lastY: touch.clientY,
+        lastAt: Date.now(),
+        totalDistance: 0,
+        velocity: 0
+    };
+}
+
+function moveHourWheelGesture(event) {
+    if (!hourWheelGesture) {
         return;
     }
 
-    window.clearTimeout(wheelScrollTimers.get(wheel));
-    wheelScrollTimers.set(wheel, window.setTimeout(() => {
-        setTimeFromMobileWheels();
-        updateMobileWheels();
-    }, 80));
+    event.preventDefault();
+
+    const touch = event.touches[0];
+    const now = Date.now();
+    const elapsed = Math.max(1, now - hourWheelGesture.lastAt);
+    const delta = hourWheelGesture.lastY - touch.clientY;
+    const pixelsPerHour = hourWheelPixelsPerHour();
+    const values = mobileHourValues();
+    const rawPosition = hourWheelGesture.startPosition + ((hourWheelGesture.startY - touch.clientY) / pixelsPerHour);
+    const minPosition = -0.3;
+    const maxPosition = values.length - 0.7;
+    const clampedPosition = Math.max(minPosition, Math.min(maxPosition, rawPosition));
+
+    hourWheelPosition = Math.max(0, Math.min(values.length - 1, clampedPosition));
+    hourWheelGesture.totalDistance += Math.abs(delta);
+    const velocity = delta / elapsed / pixelsPerHour;
+
+    hourWheelGesture.velocity = (hourWheelGesture.velocity * 0.35) + (velocity * 0.65);
+    hourWheelGesture.lastY = touch.clientY;
+    hourWheelGesture.lastAt = now;
+    hourWheelGesture.moved = hourWheelGesture.totalDistance > hourWheelDragThreshold;
+    renderHourWheel();
 }
 
-function accelerateWheelTouch(wheel) {
-    let startY = 0;
-    let startScrollTop = 0;
-    let isTouching = false;
+function finishHourWheelGesture(useMomentum = true) {
+    if (!hourWheelGesture) {
+        return;
+    }
 
-    wheel.addEventListener("touchstart", (event) => {
-        startY = event.touches[0].clientY;
-        startScrollTop = wheel.scrollTop;
-        isTouching = true;
-    }, { passive: true });
+    const releaseVelocity = useMomentum ? hourWheelGesture.velocity : 0;
+    suppressHourClick = hourWheelGesture.moved;
+    hourWheelGesture.active = false;
+    hourWheelGesture = null;
+    coastHourWheel(releaseVelocity);
 
-    wheel.addEventListener("touchmove", (event) => {
-        if (!isTouching) {
-            return;
-        }
+    window.setTimeout(() => {
+        suppressHourClick = false;
+    }, 250);
+}
 
-        event.preventDefault();
-        wheel.scrollTop = startScrollTop + ((startY - event.touches[0].clientY) * 1.38);
-    }, { passive: false });
+function startMinuteWheelGesture(event) {
+    if (minuteWheelAnimationFrame) {
+        cancelAnimationFrame(minuteWheelAnimationFrame);
+        minuteWheelAnimationFrame = null;
+    }
 
-    wheel.addEventListener("touchend", () => {
-        isTouching = false;
-        handleWheelScroll(wheel);
-    });
+    const touch = event.touches[0];
 
-    wheel.addEventListener("touchcancel", () => {
-        isTouching = false;
-    });
+    minuteWheelGesture = {
+        moved: false,
+        startPosition: minuteWheelPosition,
+        startY: touch.clientY,
+        lastY: touch.clientY,
+        lastAt: Date.now(),
+        totalDistance: 0,
+        velocity: 0
+    };
+}
+
+function moveMinuteWheelGesture(event) {
+    if (!minuteWheelGesture) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const touch = event.touches[0];
+    const now = Date.now();
+    const elapsed = Math.max(1, now - minuteWheelGesture.lastAt);
+    const delta = minuteWheelGesture.lastY - touch.clientY;
+    const pixelsPerMinute = 34;
+    const values = mobileMinuteValues();
+    const rawPosition = minuteWheelGesture.startPosition + ((minuteWheelGesture.startY - touch.clientY) / pixelsPerMinute);
+    const clampedPosition = Math.max(-0.45, Math.min(values.length - 0.55, rawPosition));
+
+    minuteWheelPosition = Math.max(0, Math.min(values.length - 1, clampedPosition));
+    minuteWheelGesture.totalDistance += Math.abs(delta);
+    const velocity = delta / elapsed / pixelsPerMinute;
+
+    minuteWheelGesture.velocity = (minuteWheelGesture.velocity * 0.35) + (velocity * 0.65);
+    minuteWheelGesture.lastY = touch.clientY;
+    minuteWheelGesture.lastAt = now;
+    minuteWheelGesture.moved = minuteWheelGesture.totalDistance > minuteWheelDragThreshold;
+    renderMinuteWheel();
+}
+
+function finishMinuteWheelGesture(useMomentum = true) {
+    if (!minuteWheelGesture) {
+        return;
+    }
+
+    const releaseVelocity = useMomentum ? minuteWheelGesture.velocity : 0;
+    suppressMinuteClick = minuteWheelGesture.moved;
+    minuteWheelGesture = null;
+    coastMinuteWheel(releaseVelocity);
+
+    window.setTimeout(() => {
+        suppressMinuteClick = false;
+    }, 250);
 }
 
 function degreesFromDial(event, dial) {
@@ -934,6 +1291,7 @@ function initTimePicker() {
             label: pad(index)
         }))
     );
+    setMinuteWheelPositionFromValue(pickerMinute);
 
     setPickerMode("hour");
     setHourFormat("12");
@@ -966,32 +1324,38 @@ function initTimePicker() {
         button.addEventListener("click", () => setAmPm(button.dataset.mobileAmpm));
     }
 
-    for (const wheel of [mobileHourWheel, mobileMinuteWheel]) {
-        accelerateWheelTouch(wheel);
-        wheel.addEventListener("scroll", () => handleWheelScroll(wheel), { passive: true });
-        wheel.addEventListener("click", (event) => {
-            const button = event.target.closest("button");
+    mobileHourWheel.addEventListener("touchstart", startHourWheelGesture, { passive: true });
+    mobileHourWheel.addEventListener("touchmove", moveHourWheelGesture, { passive: false });
+    mobileHourWheel.addEventListener("touchend", () => finishHourWheelGesture(true));
+    mobileHourWheel.addEventListener("touchcancel", () => finishHourWheelGesture(false));
+    mobileHourWheel.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
 
-            if (!button) {
-                return;
-            }
+        if (!button || suppressHourClick) {
+            return;
+        }
 
-            const value = Number(button.dataset.value);
-            const base = pickerHour >= 12 ? 12 : 0;
+        const values = mobileHourValues();
+        const targetIndex = values.indexOf(Number(button.dataset.value));
 
-            if (wheel === mobileHourWheel) {
-                setTimeValue(hourFormat === "12" ? base + (value % 12) : value, pickerMinute);
-            } else {
-                setTimeValue(pickerHour, value);
-            }
+        if (targetIndex !== -1) {
+            animateHourWheelTo(targetIndex);
+        }
+    });
 
-            wheelSyncing = true;
-            scrollWheelToValue(wheel, value, "smooth");
-            window.setTimeout(() => {
-                wheelSyncing = false;
-            }, 180);
-        });
-    }
+    mobileMinuteWheel.addEventListener("touchstart", startMinuteWheelGesture, { passive: true });
+    mobileMinuteWheel.addEventListener("touchmove", moveMinuteWheelGesture, { passive: false });
+    mobileMinuteWheel.addEventListener("touchend", () => finishMinuteWheelGesture(true));
+    mobileMinuteWheel.addEventListener("touchcancel", () => finishMinuteWheelGesture(false));
+    mobileMinuteWheel.addEventListener("click", (event) => {
+        const button = event.target.closest("button");
+
+        if (!button || suppressMinuteClick) {
+            return;
+        }
+
+        animateMinuteWheelTo(Number(button.dataset.value));
+    });
 
     for (const button of document.querySelectorAll("[data-minute]")) {
         button.addEventListener("click", () => {
