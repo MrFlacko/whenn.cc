@@ -211,7 +211,7 @@ $jsPath = __DIR__ . '/js/app.js';
 
     <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32.png">
     <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
-    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/icon-180.png">    
     <link rel="manifest" href="/json/manifest.json">
     <meta name="theme-color" content="#111318">
     <style>
