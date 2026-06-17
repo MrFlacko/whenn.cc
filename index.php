@@ -459,6 +459,26 @@ foreach ($examples as $ex) {
                     </div>
                 </div>
 
+                <div class="mobile-wheel-picker" aria-label="Pick a time with wheels">
+                    <div class="wheel-stage">
+                        <div class="time-wheel" id="mobileHourWheel" aria-label="Hour"></div>
+                        <div class="time-wheel-divider" aria-hidden="true">:</div>
+                        <div class="time-wheel" id="mobileMinuteWheel" aria-label="Minute"></div>
+                    </div>
+
+                    <div class="mobile-time-options">
+                        <div class="mobile-format-toggle" aria-label="Hour display">
+                            <button type="button" data-hour-format="12">12h</button>
+                            <button type="button" data-hour-format="24">24h</button>
+                        </div>
+
+                        <div class="mobile-ampm-toggle" id="mobileAmpmToggle" aria-label="AM or PM">
+                            <button type="button" data-mobile-ampm="AM">AM</button>
+                            <button type="button" data-mobile-ampm="PM">PM</button>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="picker-face">
                     <div class="dial-group dial-panel">
                         <div class="dial-heading">
