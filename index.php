@@ -221,7 +221,15 @@ $jsPath = __DIR__ . '/js/app.js';
 </head>
 
 <body class="<?= $path !== '' ? 'has-event' : 'home-page' ?>">
+    <div class="install-prompt" id="installPrompt" hidden>
+        <div>
+            <strong>Install whenn.cc</strong>
+            <span id="installPromptText">Add it to your home screen for quicker access.</span>
+        </div>
 
+        <button type="button" id="installButton">Install</button>
+        <button type="button" id="installDismiss" aria-label="Dismiss">×</button>
+    </div>
     <script>
         const linkyData = {
             country: <?= json_encode($countryData['name']['common'] ?? '') ?>,

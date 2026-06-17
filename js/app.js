@@ -135,6 +135,58 @@ function isValidTimezone(timezone) {
     }
 }
 
+let deferredInstallPrompt = null;
+
+const installPromptBox = document.getElementById("installPrompt");
+const installButton = document.getElementById("installButton");
+const installDismiss = document.getElementById("installDismiss");
+const installPromptText = document.getElementById("installPromptText");
+
+const installDismissed = localStorage.getItem("whennInstallDismissed") === "1";
+const alreadyInstalled =
+    window.matchMedia("(display-mode: standalone)").matches ||
+    window.navigator.standalone === true;
+
+function hideInstallPromptForever() {
+    localStorage.setItem("whennInstallDismissed", "1");
+    installPromptBox.hidden = true;
+}
+
+window.addEventListener("beforeinstallprompt", (event) => {
+    if (installDismissed || alreadyInstalled) {
+        return;
+    }
+
+    event.preventDefault();
+    deferredInstallPrompt = event;
+    installPromptBox.hidden = false;
+});
+
+installButton?.addEventListener("click", async () => {
+    if (!deferredInstallPrompt) {
+        return;
+    }
+
+    const result = await deferredInstallPrompt.prompt();
+    deferredInstallPrompt = null;
+
+    if (result.outcome === "accepted" || result.outcome === "dismissed") {
+        hideInstallPromptForever();
+    }
+});
+
+const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+
+if (isIos && !installDismissed && !alreadyInstalled) {
+    installPromptText.textContent = "On iPhone: tap Share, then Add to Home Screen.";
+    installButton.hidden = true;
+    installPromptBox.hidden = false;
+}
+
+installDismiss?.addEventListener("click", hideInstallPromptForever);
+
+window.addEventListener("appinstalled", hideInstallPromptForever);
+
 function getBrowserTimezone() {
     const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
 
