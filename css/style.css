@@ -758,7 +758,7 @@ button:hover{
 
 .link-note{
     display:none;
-    margin-top:8px;
+    margin-top:10px;
     color:var(--muted);
     font-size:13px;
 }
@@ -768,14 +768,31 @@ button:hover{
 }
 
 .link-note span{
-    color:var(--soft);
-    font-weight:850;
+    color:var(--muted);
+    font-weight:750;
 }
 
 .link-note a{
-    color:#d8fff7;
+    display:inline-flex;
+    align-items:center;
+    max-width:100%;
+    margin-top:5px;
     margin-left:6px;
-    text-decoration:none;
+    color:#00c29e;
+    font-size:13px;
+    font-weight:750;
+    letter-spacing:.01em;
+    text-decoration:underline;
+    text-decoration-thickness:1px;
+    text-underline-offset:3px;
+    text-decoration-color:rgba(53,194,165,.45);
+    overflow-wrap:anywhere;
+    transition:color .18s ease, text-decoration-color .18s ease;
+}
+
+.link-note a:hover{
+    color:#00866e;
+    text-decoration-color:rgba(53,194,165,.9);
 }
 
 .date-popover,

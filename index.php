@@ -414,7 +414,7 @@ foreach ($examples as $ex) {
             </form>
 
             <div class="link-note" id="resultPanel">
-                <span>Generated link:</span>
+                <span>Try yourself:</span>
                 <a id="createdLink" href="/"></a>
             </div>
         </section>

@@ -894,7 +894,8 @@ function renderGeneratedLink() {
     }
 
     createdLink.href = link;
-    createdLink.textContent = link.replace(window.location.origin, "");
+    createdLink.textContent = link.replace(/^https?:\/\//, "");
+    createdLink.title = "Open preview link";
     resultPanel.classList.add("is-visible");
 }
 
