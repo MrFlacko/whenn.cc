@@ -363,7 +363,7 @@ foreach ($examples as $ex) {
         <section class="creator" aria-labelledby="creatorTitle">
             <div class="section-heading">
                 <p class="eyebrow">Creator</p>
-                <h2 id="creatorTitle">Build your link</h2>
+                <h2 id="creatorTitle">Create an Invite</h2>
             </div>
 
             <form class="creator-form" id="creatorForm">
@@ -395,7 +395,7 @@ foreach ($examples as $ex) {
                     </button>
                 </label>
 
-                <button type="submit" id="createCopyButton">Create & Copy</button>
+                <button type="submit" id="createCopyButton">Copy Invite Link</button>
             </form>
 
             <div class="link-note" id="resultPanel">

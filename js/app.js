@@ -1235,7 +1235,7 @@ async function copyGeneratedLink() {
     }
 
     setTimeout(() => {
-        createCopyButton.textContent = "Create & Copy";
+        createCopyButton.textContent = "Copy Invite Link";
         createCopyButton.classList.remove("is-flashing");
         createCopyButton.classList.remove("is-success");
     }, 900);
