@@ -1421,12 +1421,13 @@ button:hover{
         position:relative;
         z-index:1;
         height:218px;
-        padding-block:92px;
+        padding-block:89px;
         overflow-y:auto;
         overscroll-behavior:contain;
-        scroll-snap-type:y mandatory;
+        scroll-snap-type:y proximity;
         scrollbar-width:none;
         touch-action:pan-y;
+        -webkit-overflow-scrolling:touch;
     }
 
     .time-wheel::-webkit-scrollbar{
@@ -1447,13 +1448,37 @@ button:hover{
         line-height:1;
         font-variant-numeric:tabular-nums;
         scroll-snap-align:center;
+        scroll-snap-stop:normal;
         transform:scale(.94);
-        transition:color .12s ease, transform .12s ease;
+        transition:color .16s ease, transform .18s ease;
     }
 
     .time-wheel button.is-selected{
         color:var(--text);
         transform:scale(1.06);
+    }
+
+    #mobileHourWheel button{
+        min-height:46px;
+    }
+
+    #mobileHourWheel,
+    #mobileMinuteWheel{
+        overflow:hidden;
+        touch-action:none;
+    }
+
+    #mobileHourWheel button,
+    #mobileMinuteWheel button{
+        position:absolute;
+        left:0;
+        top:50%;
+        transition:color .12s ease;
+        will-change:transform, opacity;
+    }
+
+    #mobileMinuteWheel button{
+        min-height:41px;
     }
 
     .mobile-minute-chips{
@@ -1785,12 +1810,19 @@ button:hover{
 
     .time-wheel{
         height:188px;
-        padding-block:77px;
+        padding-block:74px;
     }
 
     .time-wheel button{
-        min-height:34px;
         font-size:18px;
+    }
+
+    #mobileHourWheel button{
+        min-height:44px;
+    }
+
+    #mobileMinuteWheel button{
+        min-height:40px;
     }
 
     .mobile-time-options:not(.is-24-hour){
