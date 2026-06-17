@@ -32,6 +32,10 @@ const hourDial = document.getElementById("hourDial");
 const hourHand = document.getElementById("hourHand");
 const minuteHand = document.getElementById("minuteHand");
 const ampmToggle = document.getElementById("ampmToggle");
+const mobileHourWheel = document.getElementById("mobileHourWheel");
+const mobileMinuteWheel = document.getElementById("mobileMinuteWheel");
+const mobileAmpmToggle = document.getElementById("mobileAmpmToggle");
+const mobileTimeOptions = document.querySelector(".mobile-time-options");
 const manualCountrySelect = document.getElementById("manualCountrySelect");
 const manualCitySelect = document.getElementById("manualCitySelect");
 const creatorForm = document.getElementById("creatorForm");
@@ -48,6 +52,9 @@ let hourFormat = "12";
 let manualCountries = countries;
 let calendarCursor = new Date();
 let countdownTarget = null;
+let lockedScrollY = 0;
+let wheelSyncing = false;
+const wheelScrollTimers = new WeakMap();
 
 function pad(value) {
     return String(value).padStart(2, "0");
@@ -137,6 +144,7 @@ function setTimeValue(hour, minute) {
     hourHand.style.transform = `translateX(-50%) rotate(${hourFormat === "24" ? pickerHour * 15 : (pickerHour % 12) * 30}deg)`;
     minuteHand.style.transform = `translateX(-50%) rotate(${pickerMinute * 6}deg)`;
     updateAmPmButtons();
+    updateMobileWheels();
 }
 
 function setPickerMode(mode) {
@@ -153,6 +161,10 @@ function updateAmPmButtons() {
     for (const button of ampmToggle.querySelectorAll("button")) {
         button.classList.toggle("is-active", button.dataset.ampm === (pickerHour >= 12 ? "PM" : "AM"));
     }
+
+    for (const button of mobileAmpmToggle.querySelectorAll("button")) {
+        button.classList.toggle("is-active", button.dataset.mobileAmpm === (pickerHour >= 12 ? "PM" : "AM"));
+    }
 }
 
 function setHourFormat(format) {
@@ -160,17 +172,146 @@ function setHourFormat(format) {
     hourDial.classList.toggle("hour-mode-12", format === "12");
     hourDial.classList.toggle("hour-mode-24", format === "24");
     ampmToggle.classList.toggle("is-visible", format === "12");
+    mobileAmpmToggle.classList.toggle("is-hidden", format === "24");
+    mobileTimeOptions.classList.toggle("is-24-hour", format === "24");
+    populateMobileHourWheel();
 
     for (const button of document.querySelectorAll("[data-hour-format]")) {
         button.classList.toggle("is-active", button.dataset.hourFormat === format);
     }
 
     setTimeValue(pickerHour, pickerMinute);
+    updateMobileWheels(true);
 }
 
 function setAmPm(value) {
     const hour12 = pickerHour % 12;
     setTimeValue(value === "PM" ? hour12 + 12 : hour12, pickerMinute);
+}
+
+function lockPageScroll() {
+    if (document.body.classList.contains("is-modal-locked")) {
+        return;
+    }
+
+    lockedScrollY = window.scrollY;
+    document.body.classList.add("is-modal-locked");
+    document.documentElement.classList.add("is-modal-locked");
+}
+
+function unlockPageScroll() {
+    if (!document.body.classList.contains("is-modal-locked")) {
+        return;
+    }
+
+    document.body.classList.remove("is-modal-locked");
+    document.documentElement.classList.remove("is-modal-locked");
+    window.scrollTo(0, lockedScrollY);
+}
+
+function populateTimeWheel(wheel, values) {
+    wheel.replaceChildren();
+
+    for (const value of values) {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.dataset.value = String(value.value);
+        button.textContent = value.label;
+        wheel.append(button);
+    }
+}
+
+function populateMobileHourWheel() {
+    populateTimeWheel(
+        mobileHourWheel,
+        Array.from({ length: hourFormat === "12" ? 12 : 24 }, (_, index) => ({
+            value: hourFormat === "12" ? index + 1 : index,
+            label: pad(hourFormat === "12" ? index + 1 : index)
+        }))
+    );
+}
+
+function selectedWheelValue(wheel) {
+    const buttons = [...wheel.querySelectorAll("button")];
+    const center = wheel.scrollTop + (wheel.clientHeight / 2);
+    let selected = buttons[0];
+    let selectedDistance = Infinity;
+
+    for (const button of buttons) {
+        const buttonCenter = button.offsetTop + (button.offsetHeight / 2);
+        const distance = Math.abs(buttonCenter - center);
+
+        if (distance < selectedDistance) {
+            selected = button;
+            selectedDistance = distance;
+        }
+    }
+
+    return Number(selected?.dataset.value || 0);
+}
+
+function scrollWheelToValue(wheel, value, behavior = "auto") {
+    const button = wheel.querySelector(`[data-value="${value}"]`);
+
+    if (!button) {
+        return;
+    }
+
+    const top = button.offsetTop - ((wheel.clientHeight - button.offsetHeight) / 2);
+    wheel.scrollTo({ top, behavior });
+}
+
+function updateWheelSelection(wheel, value) {
+    for (const button of wheel.querySelectorAll("button")) {
+        button.classList.remove("is-selected");
+    }
+
+    for (const button of wheel.querySelectorAll("button")) {
+        if (Number(button.dataset.value) === value) {
+            button.classList.add("is-selected");
+            break;
+        }
+    }
+}
+
+function updateMobileWheels(scroll = false) {
+    if (!mobileHourWheel || !mobileMinuteWheel || (wheelSyncing && !scroll)) {
+        return;
+    }
+
+    const displayHour = hourFormat === "12" ? ((pickerHour + 11) % 12) + 1 : pickerHour;
+
+    updateWheelSelection(mobileHourWheel, displayHour);
+    updateWheelSelection(mobileMinuteWheel, pickerMinute);
+
+    if (scroll) {
+        wheelSyncing = true;
+        scrollWheelToValue(mobileHourWheel, displayHour);
+        scrollWheelToValue(mobileMinuteWheel, pickerMinute);
+        requestAnimationFrame(() => {
+            wheelSyncing = false;
+        });
+    }
+}
+
+function setTimeFromMobileWheels() {
+    const selectedHour = selectedWheelValue(mobileHourWheel);
+    const minute = selectedWheelValue(mobileMinuteWheel);
+    const base = pickerHour >= 12 ? 12 : 0;
+    const hour = hourFormat === "12" ? base + (selectedHour % 12) : selectedHour;
+    setTimeValue(hour, minute);
+}
+
+function handleWheelScroll(wheel) {
+    if (wheelSyncing) {
+        return;
+    }
+
+    window.clearTimeout(wheelScrollTimers.get(wheel));
+    wheelScrollTimers.set(wheel, window.setTimeout(() => {
+        setTimeFromMobileWheels();
+        updateMobileWheels();
+    }, 80));
 }
 
 function degreesFromDial(event, dial) {
@@ -230,14 +371,22 @@ function syncPickerFromInput() {
 
 function openTimePicker() {
     syncPickerFromInput();
+    lockPageScroll();
+    timePopover.inert = false;
     timePopover.classList.add("is-open");
     timePopover.setAttribute("aria-hidden", "false");
+    requestAnimationFrame(() => updateMobileWheels(true));
 }
 
 function closeTimePicker() {
+    if (timePopover.contains(document.activeElement)) {
+        timePickerButton.focus({ preventScroll: true });
+    }
+
     timePopover.classList.remove("is-open");
+    timePopover.inert = true;
     timePopover.setAttribute("aria-hidden", "true");
-    timePickerButton.blur();
+    unlockPageScroll();
 }
 
 function setDateValue(value) {
@@ -288,14 +437,21 @@ function renderCalendar() {
 function openDatePicker() {
     calendarCursor = dateInput.value ? dateFromInputValue(dateInput.value) : new Date();
     renderCalendar();
+    lockPageScroll();
+    datePopover.inert = false;
     datePopover.classList.add("is-open");
     datePopover.setAttribute("aria-hidden", "false");
 }
 
 function closeDatePicker() {
+    if (datePopover.contains(document.activeElement)) {
+        datePickerButton.focus({ preventScroll: true });
+    }
+
     datePopover.classList.remove("is-open");
+    datePopover.inert = true;
     datePopover.setAttribute("aria-hidden", "true");
-    datePickerButton.blur();
+    unlockPageScroll();
 }
 
 function getTimeZoneOffset(date, timezone) {
@@ -740,6 +896,15 @@ function initSelectInteractions() {
 }
 
 function initTimePicker() {
+    timePopover.inert = true;
+    populateTimeWheel(
+        mobileMinuteWheel,
+        Array.from({ length: 60 }, (_, index) => ({
+            value: index,
+            label: pad(index)
+        }))
+    );
+
     setPickerMode("hour");
     setHourFormat("12");
     timePickerButton.addEventListener("click", openTimePicker);
@@ -767,6 +932,36 @@ function initTimePicker() {
         button.addEventListener("click", () => setAmPm(button.dataset.ampm));
     }
 
+    for (const button of mobileAmpmToggle.querySelectorAll("button")) {
+        button.addEventListener("click", () => setAmPm(button.dataset.mobileAmpm));
+    }
+
+    for (const wheel of [mobileHourWheel, mobileMinuteWheel]) {
+        wheel.addEventListener("scroll", () => handleWheelScroll(wheel), { passive: true });
+        wheel.addEventListener("click", (event) => {
+            const button = event.target.closest("button");
+
+            if (!button) {
+                return;
+            }
+
+            const value = Number(button.dataset.value);
+            const base = pickerHour >= 12 ? 12 : 0;
+
+            if (wheel === mobileHourWheel) {
+                setTimeValue(hourFormat === "12" ? base + (value % 12) : value, pickerMinute);
+            } else {
+                setTimeValue(pickerHour, value);
+            }
+
+            wheelSyncing = true;
+            scrollWheelToValue(wheel, value, "smooth");
+            window.setTimeout(() => {
+                wheelSyncing = false;
+            }, 180);
+        });
+    }
+
     for (const button of document.querySelectorAll("[data-minute]")) {
         button.addEventListener("click", () => {
             setPickerMode("minute");
@@ -782,6 +977,7 @@ function initTimePicker() {
 }
 
 function initDatePicker() {
+    datePopover.inert = true;
     datePickerButton.addEventListener("click", openDatePicker);
     document.getElementById("datePickerClose").addEventListener("click", closeDatePicker);
     document.getElementById("datePickerCancel").addEventListener("click", closeDatePicker);
