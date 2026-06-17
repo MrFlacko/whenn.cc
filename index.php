@@ -466,6 +466,13 @@ foreach ($examples as $ex) {
                         <div class="time-wheel" id="mobileMinuteWheel" aria-label="Minute"></div>
                     </div>
 
+                    <div class="mobile-minute-chips" aria-label="Quick minute choices">
+                        <button type="button" data-minute="00">:00</button>
+                        <button type="button" data-minute="15">:15</button>
+                        <button type="button" data-minute="30">:30</button>
+                        <button type="button" data-minute="45">:45</button>
+                    </div>
+
                     <div class="mobile-time-options">
                         <div class="mobile-format-toggle" aria-label="Hour display">
                             <button type="button" data-hour-format="12">12h</button>
