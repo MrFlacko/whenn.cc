@@ -209,7 +209,7 @@ $jsPath = __DIR__ . '/js/app.js';
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>when.cc</title>
     <style>
-<?php readfile($cssPath); ?>
+        <?php readfile($cssPath); ?>
     </style>
 </head>
 
@@ -232,6 +232,14 @@ $jsPath = __DIR__ . '/js/app.js';
 
     <header class="topbar">
         <a class="brand" href="/" aria-label="Go to whenn.cc home">whenn.cc</a>
+        <a class="github-link-card"
+        href="https://github.com/MrFlacko/whenn.cc"
+        target="_blank"
+        rel="noopener"
+        aria-label="View source on GitHub">
+            <img src="https://cdn.simpleicons.org/github/ffffff" alt="" aria-hidden="true">
+            <span>Git</span>
+        </a>
     </header>
 
     <main class="page">
