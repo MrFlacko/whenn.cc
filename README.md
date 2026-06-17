@@ -1,6 +1,4 @@
-<h2 align="center">
-  <a href="https://whenn.cc">https://whenn.cc</a>
-</h2>
+<h2 align="center">Website: ➜ <a href="https://whenn.cc"><ins>https://whenn.cc</ins></a></h2>
 
 > Hey bro, I finish work at 5:45pm but I'm in London. Here's when I'm free: [https://whenn.cc/gb/london/16-06-2042/1745](https://whenn.cc/gb/london/16-06-2042/1745)
 
