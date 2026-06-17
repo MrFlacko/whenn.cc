@@ -314,6 +314,36 @@ function handleWheelScroll(wheel) {
     }, 80));
 }
 
+function accelerateWheelTouch(wheel) {
+    let startY = 0;
+    let startScrollTop = 0;
+    let isTouching = false;
+
+    wheel.addEventListener("touchstart", (event) => {
+        startY = event.touches[0].clientY;
+        startScrollTop = wheel.scrollTop;
+        isTouching = true;
+    }, { passive: true });
+
+    wheel.addEventListener("touchmove", (event) => {
+        if (!isTouching) {
+            return;
+        }
+
+        event.preventDefault();
+        wheel.scrollTop = startScrollTop + ((startY - event.touches[0].clientY) * 1.38);
+    }, { passive: false });
+
+    wheel.addEventListener("touchend", () => {
+        isTouching = false;
+        handleWheelScroll(wheel);
+    });
+
+    wheel.addEventListener("touchcancel", () => {
+        isTouching = false;
+    });
+}
+
 function degreesFromDial(event, dial) {
     const rect = dial.getBoundingClientRect();
     const centerX = rect.left + (rect.width / 2);
@@ -937,6 +967,7 @@ function initTimePicker() {
     }
 
     for (const wheel of [mobileHourWheel, mobileMinuteWheel]) {
+        accelerateWheelTouch(wheel);
         wheel.addEventListener("scroll", () => handleWheelScroll(wheel), { passive: true });
         wheel.addEventListener("click", (event) => {
             const button = event.target.closest("button");
@@ -966,6 +997,7 @@ function initTimePicker() {
         button.addEventListener("click", () => {
             setPickerMode("minute");
             setTimeValue(pickerHour, Number(button.dataset.minute));
+            updateMobileWheels(true);
         });
     }
 

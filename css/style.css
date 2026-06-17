@@ -1365,7 +1365,7 @@ button:hover{
 
     .mobile-wheel-picker{
         display:grid;
-        gap:14px;
+        gap:12px;
         margin-top:6px;
     }
 
@@ -1375,7 +1375,7 @@ button:hover{
         grid-template-columns:minmax(0, 1fr) 18px minmax(0, 1fr);
         align-items:center;
         gap:8px;
-        min-height:186px;
+        min-height:218px;
         border-radius:8px;
         background:
             linear-gradient(180deg, rgba(33,40,55,.72), transparent 20%, transparent 80%, rgba(18,24,34,.72)),
@@ -1420,8 +1420,8 @@ button:hover{
     .time-wheel{
         position:relative;
         z-index:1;
-        height:186px;
-        padding-block:76px;
+        height:218px;
+        padding-block:92px;
         overflow-y:auto;
         overscroll-behavior:contain;
         scroll-snap-type:y mandatory;
@@ -1454,6 +1454,26 @@ button:hover{
     .time-wheel button.is-selected{
         color:var(--text);
         transform:scale(1.06);
+    }
+
+    .mobile-minute-chips{
+        display:grid;
+        grid-template-columns:repeat(4, minmax(0, 1fr));
+        gap:8px;
+    }
+
+    .mobile-minute-chips button{
+        min-height:36px;
+        border:1px solid var(--line);
+        border-radius:8px;
+        background:#121822;
+        color:var(--text);
+        padding:0;
+        font-size:14px;
+    }
+
+    .mobile-minute-chips button:hover{
+        background:rgba(53,194,165,.14);
     }
 
     .mobile-ampm-toggle{
@@ -1760,12 +1780,12 @@ button:hover{
     }
 
     .wheel-stage{
-        min-height:166px;
+        min-height:188px;
     }
 
     .time-wheel{
-        height:166px;
-        padding-block:66px;
+        height:188px;
+        padding-block:77px;
     }
 
     .time-wheel button{
