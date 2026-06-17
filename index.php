@@ -207,10 +207,17 @@ $jsPath = __DIR__ . '/js/app.js';
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>when.cc</title>
+    <title>whenn.cc</title>
+
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/icon-32.png">
+    <link rel="icon" type="image/png" sizes="192x192" href="/images/icon-192.png">
+    <link rel="apple-touch-icon" href="/images/icon-192.png">
+    <link rel="manifest" href="/json/manifest.json">
+    <meta name="theme-color" content="#111318">
     <style>
         <?php readfile($cssPath); ?>
     </style>
+    
 </head>
 
 <body class="<?= $path !== '' ? 'has-event' : 'home-page' ?>">
