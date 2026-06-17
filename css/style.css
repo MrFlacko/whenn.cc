@@ -740,11 +740,14 @@ button:hover{
 .time-popover-panel{
     position:relative;
     width:min(760px, 100%);
-    border:1px solid var(--line);
+    border:1px solid rgba(255,255,255,.1);
     border-radius:8px;
-    background:#151b24;
+    background:
+        linear-gradient(180deg, rgba(30,37,49,.98), rgba(18,24,33,.98));
     padding:18px;
-    box-shadow:0 30px 90px rgba(0,0,0,.45);
+    box-shadow:
+        0 30px 90px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.04);
 }
 
 .date-popover-panel{
@@ -755,13 +758,13 @@ button:hover{
     position:absolute;
     right:10px;
     top:10px;
-    width:30px;
-    min-height:30px;
+    width:34px;
+    min-height:34px;
     display:grid;
     place-items:center;
-    border:1px solid rgba(255,255,255,.1);
+    border:1px solid rgba(255,255,255,.12);
     border-radius:999px;
-    background:rgba(33,40,55,.82);
+    background:rgba(43,51,66,.88);
     color:var(--muted);
     padding:0;
     font-size:20px;
@@ -778,7 +781,7 @@ button:hover{
     align-items:center;
     justify-content:space-between;
     gap:14px;
-    margin:0 40px 14px 0;
+    margin:0 42px 16px 0;
 }
 
 .picker-header > div:first-child{
@@ -807,9 +810,9 @@ button:hover{
     display:inline-grid;
     grid-template-columns:1fr 1fr;
     gap:4px;
-    border:1px solid var(--line);
+    border:1px solid rgba(255,255,255,.09);
     border-radius:8px;
-    background:#111720;
+    background:rgba(13,18,26,.68);
     padding:4px;
 }
 
@@ -823,8 +826,9 @@ button:hover{
 }
 
 .picker-mode-toggle button.is-active{
-    background:rgba(53,194,165,.2);
+    background:rgba(53,194,165,.28);
     color:var(--accent);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.06);
 }
 
 .picker-face{
@@ -840,10 +844,12 @@ button:hover{
 }
 
 .dial-panel{
-    border:1px solid var(--line);
+    border:1px solid rgba(255,255,255,.09);
     border-radius:8px;
-    background:#1a202a;
+    background:
+        linear-gradient(180deg, rgba(31,38,50,.8), rgba(24,30,40,.72));
     padding:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.03);
 }
 
 .dial-heading{
@@ -874,15 +880,25 @@ button:hover{
 }
 
 .clock-dial{
+    --dial-size:210px;
+    --dial-number-radius:82px;
+    --dial-hour-outer-radius:87px;
+    --dial-hour-inner-radius:84px;
+    --hour-hand-length:74px;
+    --minute-hand-length:78px;
     position:relative;
-    width:210px;
-    height:210px;
+    width:var(--dial-size);
+    height:var(--dial-size);
     margin:auto;
-    border:1px solid rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.1);
     border-radius:999px;
     background:
-        radial-gradient(circle at center, rgba(53,194,165,.1) 0 18%, transparent 19%),
-        #121822;
+        radial-gradient(circle at center, rgba(53,194,165,.14) 0 14%, transparent 15%),
+        radial-gradient(circle at center, transparent 0 68%, rgba(255,255,255,.035) 69% 70%, transparent 71%),
+        #151b24;
+    box-shadow:
+        inset 0 0 0 1px rgba(0,0,0,.18),
+        inset 0 12px 30px rgba(0,0,0,.16);
     cursor:pointer;
     touch-action:none;
     user-select:none;
@@ -902,12 +918,12 @@ button:hover{
     transform:
         translate(-50%, -50%)
         rotate(calc(var(--i) * 30deg))
-        translateY(-82px)
+        translateY(calc(var(--dial-number-radius) * -1))
         rotate(calc(var(--i) * -30deg));
 }
 
 .clock-dial .hour-outer{
-    color:#d7dee9;
+    color:#cfd7e4;
     font-size:10px;
 }
 
@@ -923,18 +939,18 @@ button:hover{
     transform:
         translate(-50%, -50%)
         rotate(calc(var(--i) * 15deg))
-        translateY(-87px)
+        translateY(calc(var(--dial-hour-outer-radius) * -1))
         rotate(calc(var(--i) * -15deg));
 }
 
 .clock-dial .hour-inner{
-    color:#d7dee9;
+    color:#cfd7e4;
     font-size:12px;
     opacity:1;
     transform:
         translate(-50%, -50%)
         rotate(calc(var(--i) * 30deg))
-        translateY(-84px)
+        translateY(calc(var(--dial-hour-inner-radius) * -1))
         rotate(calc(var(--i) * -30deg));
 }
 
@@ -948,14 +964,16 @@ button:hover{
 
 .hour-hand{
     width:4px;
-    height:74px;
-    background:var(--text);
+    height:var(--hour-hand-length);
+    background:#eef3fb;
+    box-shadow:0 0 14px rgba(246,248,251,.16);
 }
 
 .minute-hand{
     width:3px;
-    height:78px;
+    height:var(--minute-hand-length);
     background:var(--accent);
+    box-shadow:0 0 14px rgba(53,194,165,.2);
 }
 
 .clock-pin{
@@ -968,8 +986,8 @@ button:hover{
     background:var(--accent);
     transform:translate(-50%, -50%);
     box-shadow:
-        0 0 0 4px rgba(53,194,165,.16),
-        0 0 18px rgba(53,194,165,.28);
+        0 0 0 8px rgba(53,194,165,.14),
+        0 0 24px rgba(53,194,165,.26);
 }
 
 .minute-nudges{
@@ -981,7 +999,7 @@ button:hover{
     width:26px;
     min-height:26px;
     border-radius:7px;
-    background:var(--panel-strong);
+    background:#242c3b;
     color:var(--text);
     padding:0;
     font-size:14px;
@@ -1001,14 +1019,14 @@ button:hover{
 .ampm-toggle button{
     min-height:30px;
     border-radius:7px;
-    background:var(--panel-strong);
+    background:#242c3b;
     color:var(--muted);
     padding:0;
     font-size:12px;
 }
 
 .ampm-toggle button.is-active{
-    background:rgba(53,194,165,.2);
+    background:rgba(53,194,165,.28);
     color:var(--accent);
 }
 
@@ -1026,7 +1044,7 @@ button:hover{
 .dial-stepper button{
     min-height:32px;
     border-radius:7px;
-    background:var(--panel-strong);
+    background:#242c3b;
     color:var(--text);
     padding:0;
 }
@@ -1041,8 +1059,14 @@ button:hover{
 
 .minute-chips button,
 .picker-actions button:first-child{
-    background:var(--panel-strong);
+    background:#242c3b;
     color:var(--text);
+}
+
+.minute-chips button{
+    min-height:34px;
+    border-radius:7px;
+    padding:0 10px;
 }
 
 .picker-actions{
@@ -1050,6 +1074,13 @@ button:hover{
     grid-template-columns:1fr 1fr;
     gap:10px;
     margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.07);
+}
+
+.picker-actions button{
+    min-height:44px;
+    font-size:16px;
 }
 
 .date-panel{
@@ -1261,6 +1292,115 @@ button:hover{
         margin-top:8px;
     }
 
+    .time-popover{
+        place-items:start center;
+        padding:8px;
+        overflow-y:auto;
+    }
+
+    .time-popover-panel{
+        width:100%;
+        max-height:calc(100dvh - 16px);
+        overflow-y:auto;
+        padding:12px;
+    }
+
+    .picker-header{
+        gap:8px;
+        margin:0 38px 12px 0;
+    }
+
+    .picker-header strong{
+        font-size:26px;
+    }
+
+    .picker-face{
+        gap:12px;
+    }
+
+    .dial-group{
+        gap:8px;
+    }
+
+    .dial-panel{
+        padding:12px;
+    }
+
+    .dial-heading{
+        gap:8px;
+    }
+
+    .dial-heading strong{
+        font-size:20px;
+    }
+
+    .picker-mode-toggle button{
+        min-height:28px;
+        padding:0 9px;
+    }
+
+    .minute-dial-wrap{
+        grid-template-columns:auto 24px;
+        gap:5px;
+    }
+
+    .clock-dial{
+        --dial-size:168px;
+        --dial-number-radius:64px;
+        --dial-hour-outer-radius:69px;
+        --dial-hour-inner-radius:66px;
+        --hour-hand-length:58px;
+        --minute-hand-length:62px;
+    }
+
+    .clock-dial span{
+        width:22px;
+        height:22px;
+        font-size:10px;
+    }
+
+    .clock-dial .hour-outer{
+        font-size:9px;
+    }
+
+    .clock-dial .hour-inner{
+        font-size:11px;
+    }
+
+    .minute-nudges button{
+        width:24px;
+        min-height:24px;
+        font-size:13px;
+    }
+
+    .dial-stepper,
+    .ampm-toggle{
+        width:min(100%, 168px);
+    }
+
+    .minute-chips{
+        width:min(100%, 280px);
+        gap:8px;
+    }
+
+    .minute-chips button{
+        min-height:38px;
+    }
+
+    .picker-actions{
+        position:sticky;
+        bottom:-12px;
+        margin:12px -12px -12px;
+        padding:12px;
+        background:
+            linear-gradient(180deg, rgba(18,24,33,0), rgba(18,24,33,.94) 24%),
+            rgba(18,24,33,.96);
+    }
+
+    .picker-actions button{
+        min-height:44px;
+    }
+
     .has-event .clock-card{
         grid-template-columns:minmax(0, 1fr) 20px minmax(0, 1fr);
         gap:2px;
@@ -1470,5 +1610,31 @@ button:hover{
     .countdown-card,
     .examples-card{
         padding:15px;
+    }
+
+}
+
+@media (max-width:360px){
+    .time-popover-panel{
+        padding:10px;
+    }
+
+    .clock-dial{
+        --dial-size:150px;
+        --dial-number-radius:57px;
+        --dial-hour-outer-radius:62px;
+        --dial-hour-inner-radius:59px;
+        --hour-hand-length:52px;
+        --minute-hand-length:56px;
+    }
+
+    .clock-dial span{
+        width:20px;
+        height:20px;
+        font-size:9px;
+    }
+
+    .clock-dial .hour-inner{
+        font-size:10px;
     }
 }
