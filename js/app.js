@@ -1143,6 +1143,34 @@ function findZoneByTimezone(timezone) {
     return null;
 }
 
+function getLinkedEventFormValues() {
+    if (
+        !linkyData.hasEvent ||
+        linkyData.error ||
+        !/^\d{2}-\d{2}-\d{4}$/.test(linkyData.date) ||
+        !/^\d{4}$/.test(linkyData.time)
+    ) {
+        return null;
+    }
+
+    const [day, month, year] = linkyData.date.split("-");
+    const hour = Number(linkyData.time.slice(0, 2));
+    const minute = Number(linkyData.time.slice(2));
+    const match = findZoneByTimezone(linkyData.timezone);
+
+    if (!match || hour > 23 || minute > 59) {
+        return null;
+    }
+
+    return {
+        country: match.country,
+        zone: match.zone,
+        date: `${year}-${month}-${day}`,
+        hour,
+        minute
+    };
+}
+
 function selectedManualCountry() {
     return manualCountries.find((country) => country.slug === manualCountrySelect.value) || manualCountries[0];
 }
@@ -1274,14 +1302,19 @@ function initExampleAccordion() {
 
 function setInitialFormValues() {
     const now = new Date();
-    const match = findZoneByTimezone(getBrowserTimezone());
-    const defaultCountry = match?.country || countries.find((country) => country.code === "AU") || countries[0];
-    const defaultZone = match?.zone || defaultCountry?.zones[0];
+    const linkedEvent = getLinkedEventFormValues();
+    const browserMatch = findZoneByTimezone(getBrowserTimezone());
+    const defaultCountry =
+        linkedEvent?.country ||
+        browserMatch?.country ||
+        countries.find((country) => country.code === "AU") ||
+        countries[0];
+    const defaultZone = linkedEvent?.zone || browserMatch?.zone || defaultCountry?.zones[0];
 
-    dateInput.value = toInputDate(now);
+    dateInput.value = linkedEvent?.date || toInputDate(now);
     datePickerLabel.textContent = formatDateButton(dateInput.value);
     datePickerReadout.textContent = formatDateButton(dateInput.value);
-    setTimeValue(now.getHours(), now.getMinutes());
+    setTimeValue(linkedEvent?.hour ?? now.getHours(), linkedEvent?.minute ?? now.getMinutes());
 
     if (defaultCountry) {
         countrySelect.value = defaultCountry.slug;
