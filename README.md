@@ -37,5 +37,8 @@ Country data is based on the excellent [mledoze/countries](https://github.com/ml
 
 ## URL format
 ```text
+https://whenn.cc/{countryOrcountrycode}
+https://whenn.cc/{countryOrcountrycode}/{city}
 https://whenn.cc/{countryOrcountrycode}/{city}/{dateDDMMYYYY}/{timeHHMM}
 https://whenn.cc/{countryOrcountrycode}/{dateDDMMYYYY}/{timeHHMM}
+```

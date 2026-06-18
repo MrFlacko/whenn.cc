@@ -87,6 +87,16 @@ function resolve_timezone(string $city, ?array $countryData = null): ?string
     $zones = $countryZones ?: DateTimeZone::listIdentifiers();
 
     if ($cityKey === '') {
+        foreach (($countryData['capital'] ?? []) as $capital) {
+            $capitalKey = normalize_slug($capital);
+
+            foreach ($countryZones as $timezone) {
+                if (normalize_slug(city_label_from_timezone($timezone)) === $capitalKey) {
+                    return $timezone;
+                }
+            }
+        }
+
         return $countryZones[0] ?? null;
     }
 
@@ -159,12 +169,15 @@ $timezone = resolve_timezone($city, $countryData);
 $eventUtc = null;
 $eventError = null;
 $displayLocation = '';
+$isLocationClock = $path !== '' && $date === '' && $time === '';
 
-if ($date !== '' || $time !== '' || $city !== '' || $countryInput !== '') {
+if ($path !== '') {
     if (!$countryData) {
         $eventError = 'Unknown country';
     } elseif (!$timezone) {
         $eventError = 'Unknown city or timezone';
+    } elseif ($isLocationClock) {
+        // Country-only and country/place URLs show a live clock.
     } elseif (!preg_match('/^\d{2}-\d{2}-\d{4}$/', $date)) {
         $eventError = 'Invalid date';
     } elseif (!preg_match('/^\d{4}$/', $time)) {
@@ -220,7 +233,7 @@ $jsPath = __DIR__ . '/js/app.js';
     
 </head>
 
-<body class="<?= $path !== '' ? 'has-event' : 'home-page' ?>">
+<body class="<?= $path !== '' ? 'has-event' . ($isLocationClock ? ' location-clock' : '') : 'home-page' ?>">
     <div class="install-prompt" id="installPrompt" hidden>
         <div>
             <strong>Install whenn.cc</strong>
@@ -240,7 +253,8 @@ $jsPath = __DIR__ . '/js/app.js';
             timezone: <?= json_encode($timezone) ?>,
             eventUtc: <?= json_encode($eventUtc) ?>,
             error: <?= json_encode($eventError) ?>,
-            hasEvent: <?= json_encode($path !== '') ?>,
+            hasEvent: <?= json_encode($path !== '' && !$isLocationClock) ?>,
+            isLocationClock: <?= json_encode($isLocationClock) ?>,
             countries: <?= json_encode($countryOptions) ?>
         };
     </script>
@@ -353,6 +367,12 @@ foreach ($examples as $ex) {
                         <span>Your city / timezone</span>
                         <select id="manualCitySelect"></select>
                     </label>
+                </div>
+
+                <div class="current-time-link" id="currentTimePanel" hidden>
+                    <span>Your Time:</span>
+                    <a id="currentTimeLink" href="/"></a>
+                    <button id="currentTimeCopyButton" type="button">Copy</button>
                 </div>
 
                 <div class="countdown-inline" aria-label="Countdown to event">

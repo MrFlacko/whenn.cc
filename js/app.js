@@ -43,6 +43,10 @@ const creatorForm = document.getElementById("creatorForm");
 const resultPanel = document.getElementById("resultPanel");
 const createdLink = document.getElementById("createdLink");
 const createCopyButton = document.getElementById("createCopyButton");
+const countdownPanel = document.querySelector(".countdown-inline");
+const currentTimePanel = document.getElementById("currentTimePanel");
+const currentTimeLink = document.getElementById("currentTimeLink");
+const currentTimeCopyButton = document.getElementById("currentTimeCopyButton");
 
 const countries = linkyData.countries || [];
 let pickerHour = 9;
@@ -84,19 +88,6 @@ function toDisplayDate(date) {
         day: "numeric",
         year: "numeric"
     });
-}
-
-async function getIpTimezone() {
-    try {
-        const response = await fetch("https://ipapi.co/json/");
-        const data = await response.json();
-
-        if (data.timezone && isValidTimezone(data.timezone)) {
-            return data.timezone;
-        }
-    } catch (error) {}
-
-    return getBrowserTimezone();
 }
 
 function toInputDate(date) {
@@ -927,6 +918,31 @@ function renderLocation(element, label, date, timezone) {
     element.replaceChildren(document.createTextNode(label), offset);
 }
 
+function renderClockTime(element, date, timezone, includeSeconds = false) {
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: timezone,
+        hour: "numeric",
+        minute: "2-digit",
+        second: includeSeconds ? "2-digit" : undefined,
+        hour12: true
+    }).formatToParts(date);
+    const timeText = parts
+        .filter((part) => part.type !== "dayPeriod")
+        .map((part) => part.value)
+        .join("")
+        .trim();
+    const periodText = parts.find((part) => part.type === "dayPeriod")?.value;
+
+    element.replaceChildren(document.createTextNode(timeText));
+
+    if (periodText) {
+        const period = document.createElement("span");
+        period.className = "time-period";
+        period.textContent = periodText;
+        element.append(period);
+    }
+}
+
 function renderTimeDifference(eventDate, eventTimezone) {
     const differenceMinutes =
         getTimeZoneOffset(eventDate, activeTimezone) -
@@ -984,17 +1000,13 @@ function renderGeneratedLink() {
 }
 
 function renderConvertedTime(eventDate, timezone, displayLocation) {
+    countdownPanel.hidden = false;
     countdownTarget = eventDate;
     renderCountdown();
     renderTimeDifference(eventDate, timezone);
     eventTimeLabelEl.textContent = "Event Time";
     localTimeLabelEl.textContent = "Your Time";
-    eventTimeEl.textContent = eventDate.toLocaleTimeString("en-US", {
-        timeZone: timezone,
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true
-    });
+    renderClockTime(eventTimeEl, eventDate, timezone);
     eventDateEl.textContent = eventDate.toLocaleDateString("en-US", {
         timeZone: timezone,
         weekday: "short",
@@ -1003,12 +1015,7 @@ function renderConvertedTime(eventDate, timezone, displayLocation) {
         year: "numeric"
     });
     renderLocation(eventLocationEl, displayLocation, eventDate, timezone);
-    localTimeEl.textContent = eventDate.toLocaleTimeString("en-US", {
-        timeZone: activeTimezone,
-        hour: "numeric",
-        minute: "2-digit",
-        hour12: true
-    });
+    renderClockTime(localTimeEl, eventDate, activeTimezone);
     localDateEl.textContent = eventDate.toLocaleDateString("en-US", {
         timeZone: activeTimezone,
         weekday: "short",
@@ -1054,6 +1061,7 @@ function renderCountdown() {
 
 function renderError() {
     countdownTarget = null;
+    countdownPanel.hidden = true;
     timeDifferenceEl.hidden = true;
     eventTimeLabelEl.textContent = "Event Time";
     localTimeLabelEl.textContent = "Your Time";
@@ -1086,17 +1094,43 @@ function renderSharedEvent() {
     renderConvertedTime(new Date(linkyData.eventUtc), linkyData.timezone, linkyData.displayLocation);
 }
 
+function renderLocationClock() {
+    if (linkyData.error || !linkyData.timezone) {
+        renderError();
+        return;
+    }
+
+    const now = new Date();
+    countdownTarget = null;
+    countdownPanel.hidden = true;
+    renderTimeDifference(now, linkyData.timezone);
+    eventTimeLabelEl.textContent = "Current Time";
+    localTimeLabelEl.textContent = "Your Time";
+    renderClockTime(eventTimeEl, now, linkyData.timezone, true);
+    eventDateEl.textContent = now.toLocaleDateString("en-US", {
+        timeZone: linkyData.timezone,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+    });
+    renderLocation(eventLocationEl, linkyData.displayLocation, now, linkyData.timezone);
+    renderClockTime(localTimeEl, now, activeTimezone, true);
+    localDateEl.textContent = now.toLocaleDateString("en-US", {
+        timeZone: activeTimezone,
+        weekday: "short",
+        month: "short",
+        day: "numeric",
+        year: "numeric"
+    });
+    renderLocation(locationEl, activeTimezone, now, activeTimezone);
+}
+
 function renderHomepageClock() {
     const now = new Date();
 
     eventTimeLabelEl.textContent = "Your Clock";
-    eventTimeEl.textContent = now.toLocaleTimeString("en-US", {
-        timeZone: activeTimezone,
-        hour: "numeric",
-        minute: "2-digit",
-        second: "2-digit",
-        hour12: true
-    });
+    renderClockTime(eventTimeEl, now, activeTimezone, true);
     eventDateEl.textContent = now.toLocaleDateString("en-US", {
         timeZone: activeTimezone,
         weekday: "short",
@@ -1171,6 +1205,37 @@ function getLinkedEventFormValues() {
     };
 }
 
+function getLinkedLocationFormValues() {
+    if (!linkyData.isLocationClock || linkyData.error || !linkyData.timezone) {
+        return null;
+    }
+
+    const match = findZoneByTimezone(linkyData.timezone);
+
+    if (!match) {
+        return null;
+    }
+
+    const parts = new Intl.DateTimeFormat("en-US", {
+        timeZone: linkyData.timezone,
+        year: "numeric",
+        month: "2-digit",
+        day: "2-digit",
+        hour: "2-digit",
+        minute: "2-digit",
+        hourCycle: "h23"
+    }).formatToParts(new Date());
+    const value = (type) => parts.find((part) => part.type === type)?.value;
+
+    return {
+        country: match.country,
+        zone: match.zone,
+        date: `${value("year")}-${value("month")}-${value("day")}`,
+        hour: Number(value("hour")),
+        minute: Number(value("minute"))
+    };
+}
+
 function selectedManualCountry() {
     return manualCountries.find((country) => country.slug === manualCountrySelect.value) || manualCountries[0];
 }
@@ -1178,6 +1243,64 @@ function selectedManualCountry() {
 function selectedManualZone() {
     const country = selectedManualCountry();
     return country?.zones.find((zone) => zone.slug === manualCitySelect.value) || country?.zones[0];
+}
+
+function currentTimeRoute() {
+    const selectedCountry = selectedManualCountry();
+    const selectedZone = selectedManualZone();
+
+    if (
+        selectedCountry &&
+        selectedZone &&
+        selectedCountry.slug !== "detected-timezone"
+    ) {
+        return `/${selectedCountry.slug}/${selectedZone.slug}`;
+    }
+
+    const match = findZoneByTimezone(activeTimezone);
+
+    if (match) {
+        return `/${match.country.slug}/${match.zone.slug}`;
+    }
+
+    if (activeTimezone === "UTC") {
+        return "/ax/utc";
+    }
+
+    return "";
+}
+
+function updateCurrentTimeLink() {
+    const route = currentTimeRoute();
+
+    if (!route) {
+        currentTimePanel.hidden = true;
+        return;
+    }
+
+    const link = `${window.location.origin}${route}`;
+    currentTimeLink.href = link;
+    currentTimeLink.textContent = link.replace(/^https?:\/\//, "");
+    currentTimePanel.hidden = false;
+}
+
+async function copyCurrentTimeLink() {
+    if (!currentTimeLink.href) {
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(currentTimeLink.href);
+        currentTimeCopyButton.textContent = "Copied!";
+        currentTimeCopyButton.classList.add("is-success");
+    } catch (error) {
+        currentTimeCopyButton.textContent = "Copy link";
+    }
+
+    setTimeout(() => {
+        currentTimeCopyButton.textContent = "Copy";
+        currentTimeCopyButton.classList.remove("is-success");
+    }, 900);
 }
 
 function updateManualTimezone() {
@@ -1188,16 +1311,19 @@ function updateManualTimezone() {
     }
 
     activeTimezone = zone.timezone;
+    updateCurrentTimeLink();
 
     if (linkyData.hasEvent) {
         renderSharedEvent();
+    } else if (linkyData.isLocationClock) {
+        renderLocationClock();
     } else {
         renderHomepageClock();
     }
 }
 
-async function populateManualTimezones() {
-    const detectedTimezone = await getIpTimezone();
+function populateManualTimezones() {
+    const detectedTimezone = getBrowserTimezone();
     const match = findZoneByTimezone(detectedTimezone);
 
     manualCountries = countries;
@@ -1302,19 +1428,19 @@ function initExampleAccordion() {
 
 function setInitialFormValues() {
     const now = new Date();
-    const linkedEvent = getLinkedEventFormValues();
+    const linkedRoute = getLinkedEventFormValues() || getLinkedLocationFormValues();
     const browserMatch = findZoneByTimezone(getBrowserTimezone());
     const defaultCountry =
-        linkedEvent?.country ||
+        linkedRoute?.country ||
         browserMatch?.country ||
         countries.find((country) => country.code === "AU") ||
         countries[0];
-    const defaultZone = linkedEvent?.zone || browserMatch?.zone || defaultCountry?.zones[0];
+    const defaultZone = linkedRoute?.zone || browserMatch?.zone || defaultCountry?.zones[0];
 
-    dateInput.value = linkedEvent?.date || toInputDate(now);
+    dateInput.value = linkedRoute?.date || toInputDate(now);
     datePickerLabel.textContent = formatDateButton(dateInput.value);
     datePickerReadout.textContent = formatDateButton(dateInput.value);
-    setTimeValue(linkedEvent?.hour ?? now.getHours(), linkedEvent?.minute ?? now.getMinutes());
+    setTimeValue(linkedRoute?.hour ?? now.getHours(), linkedRoute?.minute ?? now.getMinutes());
 
     if (defaultCountry) {
         countrySelect.value = defaultCountry.slug;
@@ -1561,6 +1687,7 @@ function initCreator() {
         openLinkedSelect(manualCitySelect);
     });
     manualCitySelect.addEventListener("change", updateManualTimezone);
+    currentTimeCopyButton.addEventListener("click", copyCurrentTimeLink);
 
     creatorForm.addEventListener("submit", (event) => {
         event.preventDefault();
@@ -1571,6 +1698,12 @@ function initCreator() {
 function init() {
     initCreator();
     initExampleAccordion();
+
+    if (linkyData.isLocationClock) {
+        renderLocationClock();
+        setInterval(renderLocationClock, 1000);
+        return;
+    }
 
     if (!linkyData.hasEvent) {
         renderHomepageClock();
