@@ -332,7 +332,9 @@ foreach ($examples as $ex) {
                     <div class="location" id="eventLocation"><?= htmlspecialchars($displayLocation) ?></div>
                 </div>
 
-                <div class="swap-mark route-only" aria-hidden="true">›</div>
+                <div class="time-difference-column route-only">
+                    <span class="time-difference" id="timeDifference" hidden></span>
+                </div>
 
                 <div class="clock-column route-only">
                     <span class="date-label" id="localTimeLabel">Your Time</span>

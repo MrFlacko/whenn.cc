@@ -3,6 +3,7 @@ const eventDateEl = document.getElementById("eventDate");
 const eventLocationEl = document.getElementById("eventLocation");
 const eventTimeLabelEl = document.getElementById("eventTimeLabel");
 const localTimeLabelEl = document.getElementById("localTimeLabel");
+const timeDifferenceEl = document.getElementById("timeDifference");
 const localTimeEl = document.getElementById("localTime");
 const localDateEl = document.getElementById("localDate");
 const locationEl = document.getElementById("location");
@@ -909,6 +910,37 @@ function getTimeZoneOffset(date, timezone) {
     return sign * ((Number(match[2]) * 60) + Number(match[3] || 0));
 }
 
+function formatUtcOffset(date, timezone) {
+    const offsetMinutes = getTimeZoneOffset(date, timezone);
+    const sign = offsetMinutes < 0 ? "-" : "+";
+    const absoluteMinutes = Math.abs(offsetMinutes);
+    const hours = Math.floor(absoluteMinutes / 60);
+    const minutes = absoluteMinutes % 60;
+
+    return `UTC${sign}${hours}${minutes ? `:${pad(minutes)}` : ""}`;
+}
+
+function renderLocation(element, label, date, timezone) {
+    const offset = document.createElement("span");
+    offset.className = "utc-offset";
+    offset.textContent = formatUtcOffset(date, timezone);
+    element.replaceChildren(document.createTextNode(label), offset);
+}
+
+function renderTimeDifference(eventDate, eventTimezone) {
+    const differenceMinutes =
+        getTimeZoneOffset(eventDate, activeTimezone) -
+        getTimeZoneOffset(eventDate, eventTimezone);
+    const differenceHours = Math.abs(differenceMinutes) / 60;
+    const sign = differenceMinutes < 0 ? "-" : "+";
+
+    timeDifferenceEl.textContent = `${sign}${differenceHours}hr`;
+    timeDifferenceEl.title = differenceMinutes === 0
+        ? "Same as event time"
+        : `${differenceHours} hour${differenceHours === 1 ? "" : "s"} ${differenceMinutes < 0 ? "behind" : "ahead of"} event time`;
+    timeDifferenceEl.hidden = false;
+}
+
 function dateFromZonedTime(dateValue, timeValue, timezone) {
     const [year, month, day] = dateValue.split("-").map(Number);
     const [hour, minute] = timeValue.split(":").map(Number);
@@ -954,6 +986,7 @@ function renderGeneratedLink() {
 function renderConvertedTime(eventDate, timezone, displayLocation) {
     countdownTarget = eventDate;
     renderCountdown();
+    renderTimeDifference(eventDate, timezone);
     eventTimeLabelEl.textContent = "Event Time";
     localTimeLabelEl.textContent = "Your Time";
     eventTimeEl.textContent = eventDate.toLocaleTimeString("en-US", {
@@ -969,7 +1002,7 @@ function renderConvertedTime(eventDate, timezone, displayLocation) {
         day: "numeric",
         year: "numeric"
     });
-    eventLocationEl.textContent = displayLocation;
+    renderLocation(eventLocationEl, displayLocation, eventDate, timezone);
     localTimeEl.textContent = eventDate.toLocaleTimeString("en-US", {
         timeZone: activeTimezone,
         hour: "numeric",
@@ -983,7 +1016,7 @@ function renderConvertedTime(eventDate, timezone, displayLocation) {
         day: "numeric",
         year: "numeric"
     });
-    locationEl.textContent = activeTimezone;
+    renderLocation(locationEl, activeTimezone, eventDate, activeTimezone);
 }
 
 function renderCountdown() {
@@ -1021,6 +1054,7 @@ function renderCountdown() {
 
 function renderError() {
     countdownTarget = null;
+    timeDifferenceEl.hidden = true;
     eventTimeLabelEl.textContent = "Event Time";
     localTimeLabelEl.textContent = "Your Time";
     eventTimeEl.textContent = linkyData.error || "Invalid Link";
@@ -1070,7 +1104,7 @@ function renderHomepageClock() {
         day: "numeric",
         year: "numeric"
     });
-    eventLocationEl.textContent = activeTimezone;
+    renderLocation(eventLocationEl, activeTimezone, now, activeTimezone);
 }
 
 function addOption(select, value, text) {
