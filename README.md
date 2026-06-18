@@ -2,7 +2,8 @@
 
 > Hey bro, I finish work at 5:45pm but I'm in London. Here's when I'm free: [https://whenn.cc/gb/london/16-06-2042/1745](https://whenn.cc/gb/london/16-06-2042/1745)
 
-<img width="1295" height="706" alt="image" src="https://github.com/user-attachments/assets/6eee63d9-299b-4471-9caf-4aa5096a9b29" />
+<img width="1803" height="1034" alt="image" src="https://github.com/user-attachments/assets/1df7c8b4-fbaf-4e68-a814-c206143ec92d" />
+
 
 ---
 
