@@ -1853,7 +1853,8 @@ button:hover{
 
     .has-event .clock-card{
         grid-template-columns:minmax(0, 1fr) 42px minmax(0, 1fr);
-        gap:2px;
+        column-gap:2px;
+        row-gap:0;
         padding:14px 6px;
     }
 
@@ -1874,14 +1875,26 @@ button:hover{
 
     .location-clock .clock-card{
         min-height:320px;
-        row-gap:16px;
-        padding:24px 10px 20px;
+        row-gap:0;
+        padding:28px 10px 16px;
+        align-content:center;
     }
 
-    .location-clock .current-time-link{
-        width:calc(100% - 16px);
-        margin:0 auto;
-        padding-top:4px;
+    .clock-card .current-time-link{
+        display:flex;
+        align-items:center;
+        justify-content:center;
+        width:100%;
+        min-height:26px;
+        margin:12px 0 0;
+        padding:0 8px;
+        gap:6px;
+        text-align:center;
+        white-space:nowrap;
+    }
+
+    .clock-card .current-time-link button{
+        flex:0 0 auto;
     }
 
     .has-event .clock-card .date{
