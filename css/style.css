@@ -505,10 +505,6 @@ h1{
     vertical-align:.42em;
 }
 
-.location-clock .clock-card .time{
-    font-size:clamp(28px, 3.4vw, 40px);
-}
-
 .date{
     min-height:0;
     margin-top:4px;
@@ -652,12 +648,6 @@ h1{
     align-self:start;
 }
 
-.location-clock .clock-card{
-    min-height:320px;
-    align-content:center;
-    row-gap:20px;
-}
-
 @media (min-width:901px){
     .location-clock .hero-copy h1{
         line-height:.97;
@@ -762,7 +752,8 @@ label{
 select,
 input,
 .date-picker-button,
-.time-picker-button{
+.time-picker-button,
+.country-select-button{
     width:100%;
     min-height:36px;
     border:1px solid var(--line);
@@ -780,7 +771,8 @@ input,
 
 select:hover,
 .date-picker-button:hover,
-.time-picker-button:hover{
+.time-picker-button:hover,
+.country-select-button:hover{
     border-color:rgba(53,194,165,.42);
     background:#151b24;
     box-shadow:0 0 0 3px rgba(53,194,165,.1);
@@ -791,13 +783,15 @@ select.is-active,
 input:focus,
 input:focus-visible,
 .date-picker-button:focus-visible,
-.time-picker-button:focus-visible{
+.time-picker-button:focus-visible,
+.country-select-button:focus-visible{
     border-color:var(--accent);
     box-shadow:0 0 0 3px rgba(53,194,165,.16);
 }
 
 .date-picker-button,
-.time-picker-button{
+.time-picker-button,
+.country-select-button{
     display:flex;
     align-items:center;
     justify-content:flex-start;
@@ -814,6 +808,59 @@ input:focus-visible,
 .date-picker-button strong,
 .time-picker-button strong{
     font-weight:850;
+}
+
+.country-select-button{
+    position:relative;
+    justify-content:space-between;
+    background:#12161d;
+    color:var(--text);
+    text-align:left;
+}
+
+.country-select-button::after{
+    content:"";
+    width:7px;
+    height:7px;
+    flex:0 0 auto;
+    margin-left:10px;
+    border-right:2px solid currentColor;
+    border-bottom:2px solid currentColor;
+    opacity:.82;
+    transform:translateY(-2px) rotate(45deg);
+}
+
+.country-select-button span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+.country-native-select{
+    position:absolute;
+    width:1px;
+    height:1px;
+    margin:-1px;
+    padding:0;
+    border:0;
+    clip:rect(0 0 0 0);
+    clip-path:inset(50%);
+    overflow:hidden;
+    white-space:nowrap;
+}
+
+.sr-only{
+    position:absolute;
+    width:1px;
+    height:1px;
+    margin:-1px;
+    padding:0;
+    border:0;
+    clip:rect(0 0 0 0);
+    clip-path:inset(50%);
+    overflow:hidden;
+    white-space:nowrap;
 }
 
 button{
@@ -994,7 +1041,8 @@ button:hover{
 }
 
 .date-popover,
-.time-popover{
+.time-popover,
+.country-picker{
     position:fixed;
     inset:0;
     z-index:50;
@@ -1006,12 +1054,14 @@ button:hover{
 }
 
 .date-popover.is-open,
-.time-popover.is-open{
+.time-popover.is-open,
+.country-picker.is-open{
     display:grid;
 }
 
 .date-popover-panel,
-.time-popover-panel{
+.time-popover-panel,
+.country-picker-panel{
     position:relative;
     width:min(760px, 100%);
     border:1px solid rgba(255,255,255,.1);
@@ -1026,6 +1076,104 @@ button:hover{
 
 .date-popover-panel{
     width:min(440px, 100%);
+}
+
+.country-picker{
+    z-index:100;
+}
+
+.country-picker-panel{
+    width:min(460px, 100%);
+    max-height:min(620px, calc(100vh - 36px));
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    overflow:hidden;
+}
+
+.country-picker-header{
+    display:flex;
+    align-items:flex-start;
+    justify-content:space-between;
+    gap:16px;
+    padding-right:42px;
+}
+
+.country-picker-header > div{
+    display:grid;
+    gap:3px;
+}
+
+.country-picker-header span{
+    color:var(--accent);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.12em;
+    text-transform:uppercase;
+}
+
+.country-picker-header strong{
+    font-size:20px;
+}
+
+.country-search{
+    display:block;
+}
+
+.country-search input{
+    min-height:44px;
+    padding:0 14px;
+    font-size:15px;
+}
+
+.country-results{
+    min-height:0;
+    display:grid;
+    gap:5px;
+    overflow-y:auto;
+    overscroll-behavior:contain;
+    padding:2px 4px 2px 0;
+    scrollbar-color:rgba(53,194,165,.45) transparent;
+}
+
+.country-option{
+    width:100%;
+    min-height:42px;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    flex:0 0 auto;
+    padding:0 13px;
+    border:1px solid transparent;
+    background:rgba(18,24,34,.72);
+    color:var(--text);
+    text-align:left;
+}
+
+.country-option:hover,
+.country-option.is-active{
+    border-color:rgba(53,194,165,.34);
+    background:rgba(53,194,165,.12);
+    color:var(--text);
+    transform:none;
+}
+
+.country-option.is-selected{
+    border-color:rgba(53,194,165,.5);
+    color:var(--accent);
+}
+
+.country-option.is-selected::after{
+    content:"✓";
+    margin-left:12px;
+    font-size:13px;
+}
+
+.country-empty{
+    margin:0;
+    padding:18px 8px;
+    color:var(--muted);
+    text-align:center;
 }
 
 .popover-close{
@@ -1490,10 +1638,6 @@ button:hover{
         align-items:start;
     }
 
-    .location-clock .clock-card{
-        min-height:330px;
-    }
-
     .has-event .clock-card .timezone-control{
         grid-column:1 / -1;
     }
@@ -1539,6 +1683,47 @@ button:hover{
 }
 
 @media (max-width:620px){
+    .country-picker{
+        inset:var(--country-picker-top, 0px) 0 auto;
+        height:var(--country-picker-height, 100dvh);
+        align-items:end;
+        padding:12px 10px 0;
+    }
+
+    .country-picker-panel{
+        width:100%;
+        max-height:calc(var(--country-picker-height, 100dvh) - 12px);
+        min-height:min(68dvh, 560px);
+        border-radius:16px 16px 0 0;
+        padding:14px 14px max(14px, env(safe-area-inset-bottom));
+    }
+
+    .country-picker-header strong{
+        font-size:18px;
+    }
+
+    .country-search{
+        position:sticky;
+        top:0;
+        z-index:2;
+    }
+
+    .country-search input{
+        min-height:48px;
+        font-size:16px;
+    }
+
+    .country-results{
+        flex:1 1 auto;
+        align-content:start;
+        padding-bottom:8px;
+    }
+
+    .country-option{
+        min-height:46px;
+        font-size:15px;
+    }
+
     .topbar{
         height:auto;
         padding:12px 18px 0;
@@ -1868,21 +2053,14 @@ button:hover{
         line-height:1.05;
     }
 
-    .location-clock .clock-card .time{
-        min-height:42px;
-        font-size:clamp(27px, 7.6vw, 32px);
-    }
-
     .home-page .clock-card .time{
         min-height:48px;
         font-size:clamp(36px, 11vw, 44px);
     }
 
-    .location-clock .clock-card{
-        min-height:320px;
-        row-gap:0;
-        padding:28px 10px 16px;
-        align-content:center;
+    .location-clock .clock-card .time{
+        min-height:43px;
+        font-size:clamp(30px, 8vw, 34px);
     }
 
     .clock-card .current-time-link{

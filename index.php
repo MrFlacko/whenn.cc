@@ -449,6 +449,46 @@ foreach ($examples as $ex) {
             </div>
         </section>
 
+        <div class="country-picker" id="countryPicker" aria-hidden="true">
+            <div class="country-picker-panel" role="dialog" aria-modal="true" aria-labelledby="countryPickerTitle">
+                <div class="country-picker-header">
+                    <div>
+                        <span>Country</span>
+                        <strong id="countryPickerTitle">Choose a country</strong>
+                    </div>
+                    <button class="popover-close" id="countryPickerClose" type="button" aria-label="Close country picker">×</button>
+                </div>
+
+                <label class="country-search">
+                    <span class="sr-only">Search countries</span>
+                    <input id="countrySearchInput" type="search" placeholder="Search countries…" autocomplete="off" spellcheck="false">
+                </label>
+
+                <div class="country-results" id="countryResults" role="listbox" aria-label="Countries"></div>
+                <p class="country-empty" id="countryEmpty" hidden>No countries found.</p>
+            </div>
+        </div>
+
+        <div class="country-picker" id="cityPicker" aria-hidden="true">
+            <div class="country-picker-panel" role="dialog" aria-modal="true" aria-labelledby="cityPickerTitle">
+                <div class="country-picker-header">
+                    <div>
+                        <span>City / timezone</span>
+                        <strong id="cityPickerTitle">Choose a city</strong>
+                    </div>
+                    <button class="popover-close" id="cityPickerClose" type="button" aria-label="Close city picker">×</button>
+                </div>
+
+                <label class="country-search">
+                    <span class="sr-only">Search cities</span>
+                    <input id="citySearchInput" type="search" placeholder="Search cities…" autocomplete="off" spellcheck="false">
+                </label>
+
+                <div class="country-results" id="cityResults" role="listbox" aria-label="Cities and timezones"></div>
+                <p class="country-empty" id="cityEmpty" hidden>No cities found.</p>
+            </div>
+        </div>
+
         <div class="date-popover" id="datePopover" aria-hidden="true">
             <div class="date-popover-panel" role="dialog" aria-label="Pick a date">
                 <button class="popover-close" id="datePickerClose" type="button" aria-label="Close date picker">×</button>
