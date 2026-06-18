@@ -2076,7 +2076,11 @@ button:hover{
         grid-template-columns:minmax(0, 1fr) 42px minmax(0, 1fr);
         column-gap:2px;
         row-gap:0;
+        width:100%;
+        max-width:100%;
+        min-width:0;
         padding:14px 6px;
+        overflow:hidden;
     }
 
     .has-event .clock-column{
@@ -2085,7 +2089,7 @@ button:hover{
 
     .has-event .clock-card .time{
         min-height:44px;
-        font-size:clamp(29px, 8.2vw, 34px);
+        font-size:clamp(24px, 7.2vw, 34px);
         line-height:1.05;
     }
 
@@ -2096,7 +2100,7 @@ button:hover{
 
     .location-clock .clock-card .time{
         min-height:43px;
-        font-size:clamp(30px, 8vw, 34px);
+        font-size:clamp(24px, 7vw, 34px);
     }
 
     .clock-card .current-time-link{
@@ -2111,6 +2115,20 @@ button:hover{
         text-align:center;
         white-space:nowrap;
         font-size:13px;
+        min-width:0;
+        max-width:100%;
+    }
+
+    .clock-card .current-time-link a{
+        min-width:0;
+        overflow:hidden;
+        text-overflow:ellipsis;
+    }
+
+    .has-event .clock-card .timezone-control,
+    .has-event .clock-card .countdown-inline{
+        min-width:0;
+        max-width:100%;
     }
 
     .clock-card .current-time-link button{
@@ -2366,6 +2384,15 @@ button:hover{
 }
 
 @media (max-width:360px){
+    .has-event .clock-card .time{
+        min-height:38px;
+        font-size:clamp(22px, 6.8vw, 25px);
+    }
+
+    .has-event .clock-card{
+        grid-template-columns:minmax(0, 1fr) 34px minmax(0, 1fr);
+    }
+
     .time-popover-panel{
         padding:10px;
     }
