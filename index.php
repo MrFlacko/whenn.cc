@@ -22,14 +22,6 @@ function normalize_slug(string $value): string
     return preg_replace('/[^a-z0-9]+/', '', strtolower($value)) ?: '';
 }
 
-function url_slug(string $value): string
-{
-    $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
-    $value = is_string($converted) ? $converted : $value;
-
-    return trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($value)), '-');
-}
-
 function city_label_from_timezone(string $timezone): string
 {
     $parts = explode('/', $timezone);
@@ -71,7 +63,7 @@ function timezones_for_country(string $code): array
 {
     try {
         $zones = DateTimeZone::listIdentifiers(DateTimeZone::PER_COUNTRY, strtoupper($code));
-    } catch (Throwable $error) {
+    } catch (Throwable) {
         $zones = [];
     }
 

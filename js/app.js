@@ -11,7 +11,6 @@ const countdownDays = document.getElementById("countdownDays");
 const countdownHours = document.getElementById("countdownHours");
 const countdownMinutes = document.getElementById("countdownMinutes");
 const countdownSeconds = document.getElementById("countdownSeconds");
-const countdownStatus = document.getElementById("countdownStatus");
 const countrySelect = document.getElementById("countrySelect");
 const citySelect = document.getElementById("citySelect");
 const dateInput = document.getElementById("dateInput");
@@ -115,15 +114,6 @@ const minuteWheelMomentumMs = 300;
 
 function pad(value) {
     return String(value).padStart(2, "0");
-}
-
-function toDisplayDate(date) {
-    return date.toLocaleDateString("en-US", {
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-    });
 }
 
 function toInputDate(date) {
@@ -1353,9 +1343,6 @@ function renderCountdown() {
         countdownHours.textContent = "00";
         countdownMinutes.textContent = "00";
         countdownSeconds.textContent = "00";
-        if (countdownStatus) {
-            countdownStatus.textContent = "Event started";
-        }
         return;
     }
 
@@ -1369,9 +1356,6 @@ function renderCountdown() {
     countdownHours.textContent = pad(hours);
     countdownMinutes.textContent = pad(minutes);
     countdownSeconds.textContent = pad(seconds);
-    if (countdownStatus) {
-        countdownStatus.textContent = "Until event";
-    }
 }
 
 function renderError() {
