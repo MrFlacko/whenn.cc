@@ -1,0 +1,233 @@
+/**
+ * examples.css
+ *
+ * Desktop example-link cards and the animated mobile examples accordion. Mobile rules stay in this file so desktop/mobile presentation can be compared without searching elsewhere.
+ *
+ * Sections:
+ * 1. Examples card shell
+ * 2. Desktop link grid
+ * 3. Mobile accordion
+ *
+ * Troubleshooting:
+ * - Desktop and mobile markup both exist; breakpoints decide which is visible.
+ * - Accordion height/opacity are coordinated with examples.js.
+ */
+
+/* 1. Shared examples container. */
+.examples-card{
+    grid-column:1 / -1;
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:10px;
+    background:rgba(25,30,39,.58);
+    padding:10px 12px;
+    box-shadow:0 14px 34px rgba(0,0,0,.18);
+}
+
+@media (min-width:1000px){
+    .examples-card{
+        border-radius:10px;
+    }
+}
+
+.examples-mobile-accordion{
+    display:none;
+}
+
+/* 2. Desktop grid of curated example links. */
+.examples-footer{
+    display:grid;
+    grid-template-columns:repeat(5, minmax(120px, 1fr));
+    gap:7px;
+    margin-top:0;
+}
+
+.examples-footer a{
+    color:var(--text);
+    background:linear-gradient(180deg, rgba(33,40,55,.6), rgba(20,26,36,.6));
+    padding:7px 10px;
+    border-radius:8px;
+    text-decoration:none;
+    border:1px solid rgba(255,255,255,.07);
+    font-weight:800;
+    display:grid;
+    gap:3px;
+    box-shadow:0 8px 18px rgba(3,6,8,.24);
+    transition:
+        transform .16s ease,
+        box-shadow .18s ease,
+        color .12s ease,
+        border-color .18s ease,
+        background-color .18s ease;
+}
+
+.examples-footer a:hover{
+    border-color:rgba(53,194,165,.42);
+    background:rgba(53,194,165,.14);
+    color:var(--text);
+    transform:translateY(-1px);
+    box-shadow:0 12px 24px rgba(3,6,8,.28);
+}
+
+.examples-footer .ex-label{
+    font-size:13px;
+    font-weight:900;
+}
+
+.examples-footer .ex-url{
+    color:var(--soft);
+    font-size:11px;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* Arrow pill reused as the accordion state indicator. */
+.examples-mobile-arrow{
+    width:24px;
+    height:24px;
+    display:grid;
+    place-items:center;
+    border-radius:999px;
+    border:1px solid rgba(53,194,165,.18);
+    background:rgba(53,194,165,.08);
+    color:var(--accent);
+    font-size:14px;
+    font-weight:900;
+    line-height:1;
+    box-shadow:inset 0 0 0 1px rgba(255,255,255,.02);
+}
+
+/* Tablet: reduce the desktop grid to two columns. */
+@media (max-width:900px){
+    .examples-footer{
+            grid-template-columns:repeat(2, minmax(0, 1fr));
+        }
+}
+
+/* 3. Mobile: hide the desktop grid and reveal the animated details accordion. */
+@media (max-width:620px){
+    /* Mobile: the examples card switches from link grid to accordion. */
+    .examples .section-heading{
+        flex-direction:column;
+        align-items:flex-start;
+        justify-content:flex-start;
+        gap:4px;
+        margin-bottom:8px;
+    }
+
+    .examples .section-heading h2{
+        font-size:15px;
+    }
+
+    .examples-card{
+            padding:15px;
+        }
+
+    .home-page .examples-card{
+            order:1;
+        }
+
+    .examples-footer{
+            display:none;
+        }
+
+    .examples-mobile-accordion{
+            display:block;
+            margin-top:2px;
+            margin-bottom:0;
+            border:1px solid rgba(255,255,255,.08);
+            border-radius:10px;
+            background:rgba(17,22,29,.72);
+            overflow:hidden;
+        }
+
+    .examples-mobile-accordion summary{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            gap:12px;
+            padding:10px 12px;
+            color:var(--text);
+            cursor:pointer;
+            font-size:13px;
+            font-weight:850;
+            list-style:none;
+        }
+
+    .examples-mobile-accordion summary::-webkit-details-marker{
+            display:none;
+        }
+
+    .examples-mobile-arrow{
+            transform:rotate(90deg);
+            transition:transform .3s cubic-bezier(.22, 1, .36, 1);
+        }
+
+    .examples-mobile-accordion[open] .examples-mobile-arrow{
+            transform:rotate(270deg);
+        }
+
+    .examples-mobile-list{
+            height:0;
+            overflow:hidden;
+            border-top:0 solid rgba(255,255,255,.06);
+            background:rgba(12,17,24,.3);
+            transition:height .3s cubic-bezier(.24, .84, .32, 1), border-top-width .18s ease;
+        }
+
+    .examples-mobile-accordion[open] .examples-mobile-list{
+            border-top-width:1px;
+        }
+
+    .examples-mobile-list-inner{
+            display:grid;
+            gap:8px;
+            padding:0 12px;
+            opacity:0;
+            transform:translateY(-6px);
+            transition:
+                padding .3s cubic-bezier(.24, .84, .32, 1),
+                opacity .18s ease,
+                transform .32s cubic-bezier(.24, .84, .32, 1);
+        }
+
+    .examples-mobile-accordion[open] .examples-mobile-list-inner{
+            padding:12px 12px 14px;
+            opacity:1;
+            transform:translateY(0);
+        }
+
+    .examples-mobile-list a{
+            color:var(--text);
+            background:linear-gradient(180deg, rgba(33,40,55,.72), rgba(20,26,36,.78));
+            padding:8px 10px;
+            border-radius:8px;
+            text-decoration:none;
+            border:1px solid rgba(255,255,255,.06);
+            display:grid;
+            gap:3px;
+            transition:
+                transform .16s ease,
+                box-shadow .18s ease,
+                border-color .18s ease,
+                background-color .18s ease;
+        }
+
+    .examples-mobile-list a:hover{
+            border-color:rgba(53,194,165,.42);
+            background:rgba(53,194,165,.14);
+            transform:translateY(-1px);
+            box-shadow:0 12px 24px rgba(3,6,8,.24);
+        }
+
+    .examples-mobile-list .ex-label{
+            font-size:14px;
+            font-weight:900;
+        }
+
+    .examples-mobile-list .ex-url{
+            color:var(--soft);
+            font-size:11px;
+            overflow-wrap:anywhere;
+        }
+}

@@ -1,0 +1,247 @@
+/**
+ * calendar.css
+ *
+ * Add-to-calendar modal, immutable event preview, editable metadata, duration slider, provider/fallback actions, and mobile modal positioning.
+ *
+ * Sections:
+ * 1. Modal shell/header
+ * 2. Read-only event preview
+ * 3. Editable form and duration slider
+ * 4. Provider/fallback action
+ * 5. Mobile modal placement
+ *
+ * Troubleshooting:
+ * - Slider fill depends on --duration-progress set by calendar.js.
+ * - The provider button is hidden until the external library loads successfully.
+ */
+
+/* 1. Calendar-specific sizing layered over the shared modal shell in layout.css. */
+.calendar-popover{
+    z-index:90;
+}
+
+.calendar-popover-panel{
+    width:min(560px, 100%);
+    min-width:0;
+    max-width:100%;
+    max-height:calc(100dvh - 36px);
+    overflow-y:auto;
+    overflow-x:hidden;
+    border-radius:14px;
+    padding:22px;
+}
+
+.calendar-popover-header{
+    display:grid;
+    gap:6px;
+    padding-right:42px;
+}
+
+.calendar-popover-header .eyebrow{
+    margin:0;
+}
+
+.calendar-popover-header h2{
+    font-size:25px;
+    line-height:1.08;
+}
+
+.calendar-popover-header p{
+    margin:0;
+    color:var(--muted);
+    font-size:13px;
+    line-height:1.45;
+}
+
+/* 2. Four immutable values copied from the invite creator. */
+.calendar-event-preview{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:8px;
+    margin-top:18px;
+}
+
+.calendar-event-preview > div{
+    min-width:0;
+    display:grid;
+    gap:4px;
+    padding:11px 12px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:9px;
+    background:rgba(12,17,24,.62);
+}
+
+.calendar-event-preview span{
+    color:var(--soft);
+    font-size:9px;
+    font-weight:900;
+    letter-spacing:.11em;
+    text-transform:uppercase;
+}
+
+.calendar-event-preview strong{
+    color:var(--text);
+    font-size:14px;
+    overflow-wrap:anywhere;
+}
+
+.calendar-event-preview small{
+    color:var(--blue);
+    font-size:10px;
+    font-weight:800;
+    overflow-wrap:anywhere;
+}
+
+/* 3. Editable event name/description and duration controls. */
+.calendar-form{
+    min-width:0;
+    display:grid;
+    gap:12px;
+    margin-top:16px;
+}
+
+.calendar-form label > span{
+    display:flex;
+    align-items:baseline;
+    justify-content:space-between;
+}
+
+.calendar-form label small{
+    color:var(--soft);
+    font-size:10px;
+    font-weight:750;
+}
+
+.calendar-duration{
+    display:grid;
+    gap:7px;
+    padding:12px;
+    border:1px solid rgba(255,255,255,.07);
+    border-radius:9px;
+    background:rgba(12,17,24,.48);
+}
+
+/* The filled track is driven by --duration-progress from calendar.js. */
+#calendarDuration{
+    width:100%;
+    min-height:20px;
+    height:20px;
+    padding:0;
+    border:0;
+    border-radius:999px;
+    background:transparent;
+    box-shadow:none;
+    cursor:pointer;
+    accent-color:var(--accent);
+    appearance:none;
+}
+
+#calendarDuration:focus,
+#calendarDuration:focus-visible{
+    border:0;
+    box-shadow:none;
+}
+
+#calendarDuration::-webkit-slider-runnable-track{
+    height:6px;
+    border-radius:999px;
+    background:linear-gradient(90deg, var(--accent) var(--duration-progress, 9.68%), #303847 var(--duration-progress, 9.68%));
+}
+
+#calendarDuration::-webkit-slider-thumb{
+    width:18px;
+    height:18px;
+    margin-top:-6px;
+    border:2px solid #d9fff7;
+    border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 4px 12px rgba(53,194,165,.3);
+    appearance:none;
+}
+
+#calendarDuration::-moz-range-track{
+    height:6px;
+    border-radius:999px;
+    background:#303847;
+}
+
+#calendarDuration::-moz-range-progress{
+    height:6px;
+    border-radius:999px;
+    background:var(--accent);
+}
+
+#calendarDuration::-moz-range-thumb{
+    width:16px;
+    height:16px;
+    border:2px solid #d9fff7;
+    border-radius:50%;
+    background:var(--accent);
+    box-shadow:0 4px 12px rgba(53,194,165,.3);
+}
+
+.calendar-duration-heading{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:12px;
+}
+
+.calendar-duration-heading label{
+    display:block;
+}
+
+.calendar-duration-heading output{
+    color:var(--accent);
+    font-size:12px;
+    font-weight:900;
+}
+
+.calendar-duration-scale{
+    display:flex;
+    justify-content:space-between;
+    color:var(--soft);
+    font-size:9px;
+    font-weight:750;
+}
+
+/* 4. Both provider and fallback actions share the same full-width button style. */
+.calendar-download-button{
+    min-height:44px;
+    font-size:14px;
+}
+
+.calendar-provider{
+    min-height:44px;
+}
+
+.calendar-provider[hidden]{
+    display:none;
+}
+
+.calendar-provider .calendar-download-button{
+    width:100%;
+}
+
+/* 5. Mobile: inset the modal from the top safe area and allow internal scrolling. */
+@media (max-width:620px){
+    .calendar-popover{
+            align-items:start;
+            padding:calc(44px + env(safe-area-inset-top)) 10px 10px;
+        }
+
+    .calendar-popover-panel{
+            width:100%;
+            max-height:calc(100dvh - 54px - env(safe-area-inset-top));
+            border-radius:16px;
+            padding:18px 14px max(18px, env(safe-area-inset-bottom));
+        }
+
+    .calendar-popover-header h2{
+            font-size:21px;
+        }
+
+    .calendar-event-preview{
+            gap:6px;
+        }
+}

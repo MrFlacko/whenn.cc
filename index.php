@@ -1,5 +1,24 @@
 <?php
 
+/**
+ * index.php
+ *
+ * Single server-rendered entry point for every whenn.cc route.
+ *
+ * Responsibilities:
+ * 1. Parse country/city/date/time from the URL.
+ * 2. Match countries from json/countries.json and cities from PHP's timezone list.
+ * 3. Validate fixed events and convert them to one UTC instant.
+ * 4. Expose route/data state to JavaScript through `linkyData`.
+ * 5. Render the page and directly import the feature CSS/JS files.
+ *
+ * Troubleshooting:
+ * - URL dates are DD-MM-YYYY; browser form dates are YYYY-MM-DD.
+ * - City slugs match the final segment of an IANA timezone.
+ * - Routes without date/time become live location clocks.
+ */
+
+// Route parsing. Supported forms include /country/city/date/time and /country/date/time.
 $path = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');
 $parts = $path === '' ? [] : explode('/', $path);
 
@@ -14,6 +33,7 @@ if (isset($parts[1], $parts[2]) && preg_match('/^\d{2}-\d{2}-\d{4}$/', $parts[1]
     $time = $parts[2];
 }
 
+/** Normalizes user-facing names/codes into a comparison-only key. */
 function normalize_slug(string $value): string
 {
     $converted = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value);
@@ -22,17 +42,20 @@ function normalize_slug(string $value): string
     return preg_replace('/[^a-z0-9]+/', '', strtolower($value)) ?: '';
 }
 
+/** Turns an IANA timezone's final segment into a readable city label. */
 function city_label_from_timezone(string $timezone): string
 {
     $parts = explode('/', $timezone);
     return str_replace('_', ' ', end($parts));
 }
 
+/** Produces the underscore city slug used by whenn.cc URLs. */
 function city_slug_from_timezone(string $timezone): string
 {
     return strtolower(str_replace(' ', '_', city_label_from_timezone($timezone)));
 }
 
+/** Collects every country alias/code accepted in the first URL segment. */
 function country_names(array $country): array
 {
     $names = [];
@@ -59,6 +82,7 @@ function country_names(array $country): array
     return array_unique($names);
 }
 
+/** Returns Region/City IANA timezone identifiers belonging to a country code. */
 function timezones_for_country(string $code): array
 {
     try {
@@ -72,6 +96,10 @@ function timezones_for_country(string $code): array
     }));
 }
 
+/**
+ * Resolves within the matched country first, then globally as a compatibility fallback.
+ * Empty city routes prefer the capital and then the country's first timezone.
+ */
 function resolve_timezone(string $city, ?array $countryData = null): ?string
 {
     $cityKey = normalize_slug($city);
@@ -107,6 +135,7 @@ function resolve_timezone(string $city, ?array $countryData = null): ?string
     return null;
 }
 
+// Country JSON feeds URL matching and the client-side picker option lists.
 $countries = json_decode(
     file_get_contents(__DIR__ . '/json/countries.json'),
     true
@@ -157,6 +186,7 @@ foreach ($countries as $country) {
 
 usort($countryOptions, fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 
+// Validate the current route and convert fixed local event time into UTC once.
 $timezone = resolve_timezone($city, $countryData);
 $eventUtc = null;
 $eventError = null;
@@ -193,6 +223,7 @@ if ($path !== '') {
     }
 }
 
+// Build the human-readable location shown by clocks and calendar invites.
 if ($timezone) {
     $displayLocation = city_label_from_timezone($timezone);
 } elseif ($city !== '') {
@@ -203,8 +234,6 @@ if ($countryData) {
     $displayLocation .= ($displayLocation !== '' ? ', ' : '') . $countryData['name']['common'];
 }
 
-$cssPath = __DIR__ . '/css/style.css';
-$jsPath = __DIR__ . '/js/app.js';
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -219,6 +248,23 @@ $jsPath = __DIR__ . '/js/app.js';
     <link rel="apple-touch-icon" sizes="180x180" href="/images/icon-180.png">    
     <link rel="manifest" href="/json/manifest.json">
     <meta name="theme-color" content="#111318">
+
+    <!--
+        Styles load from general foundations into increasingly specific features.
+        Later files refine shared rules, so preserve this order when adding files.
+    -->
+    <link rel="stylesheet" href="/css/foundation.css">
+    <link rel="stylesheet" href="/css/layout.css">
+    <link rel="stylesheet" href="/css/forms.css">
+    <link rel="stylesheet" href="/css/examples.css">
+    <link rel="stylesheet" href="/css/clock.css">
+    <link rel="stylesheet" href="/css/creator.css">
+    <link rel="stylesheet" href="/css/location-pickers.css">
+    <link rel="stylesheet" href="/css/date-picker.css">
+    <link rel="stylesheet" href="/css/time-picker.css">
+    <link rel="stylesheet" href="/css/calendar.css">
+    <link rel="stylesheet" href="/css/install-prompt.css">
+
     <script
         id="calendarLibraryScript"
         src="https://cdn.jsdelivr.net/npm/add-to-calendar-button@2.14.0"
@@ -228,10 +274,6 @@ $jsPath = __DIR__ . '/js/app.js';
         async
         defer
     ></script>
-    <style>
-        <?php readfile($cssPath); ?>
-    </style>
-    
 </head>
 
 <body class="<?= $path !== '' ? 'has-event' . ($isLocationClock ? ' location-clock' : '') : 'home-page' ?>">
@@ -244,6 +286,7 @@ $jsPath = __DIR__ . '/js/app.js';
         <button type="button" id="installButton">Install</button>
         <button type="button" id="installDismiss" aria-label="Dismiss">×</button>
     </div>
+    <!-- PHP-to-JavaScript bridge: route flags plus country/timezone picker data. -->
     <script>
         const linkyData = {
             country: <?= json_encode($countryData['name']['common'] ?? '') ?>,
@@ -750,9 +793,21 @@ foreach ($examples as $ex) {
         </div>
     </main>
 
-    <script>
-<?php readfile($jsPath); ?>
-    </script>
+    <!--
+        Classic deferred scripts share state; dependency order is intentional.
+        shared.js must remain first and app.js must remain last.
+    -->
+    <script src="/js/shared.js" defer></script>
+    <script src="/js/install-prompt.js" defer></script>
+    <script src="/js/time-picker.js" defer></script>
+    <script src="/js/date-picker.js" defer></script>
+    <script src="/js/location-pickers.js" defer></script>
+    <script src="/js/calendar.js" defer></script>
+    <script src="/js/clock.js" defer></script>
+    <script src="/js/examples.js" defer></script>
+    <script src="/js/select-controls.js" defer></script>
+    <script src="/js/creator.js" defer></script>
+    <script src="/js/app.js" defer></script>
 
 </body>
 

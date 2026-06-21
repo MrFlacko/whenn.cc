@@ -56,6 +56,39 @@ Country data is based on the excellent [mledoze/countries](https://github.com/ml
 
 Calendar invite options are powered by [add2cal/add-to-calendar-button](https://github.com/add2cal/add-to-calendar-button) v2.14.0.
 
+## Code layout
+
+The page is server-rendered by `index.php`, which imports feature-specific CSS and JavaScript files directly.
+
+### CSS
+
+- `foundation.css` — theme variables, document defaults, typography, accessibility.
+- `layout.css` — header, hero, shared cards, modal shells, page-level responsive layout.
+- `forms.css` — shared fields, buttons, custom select triggers, picker actions.
+- `examples.css` — desktop example links and mobile accordion.
+- `clock.css` — clocks, countdown, timezone controls, event/local comparison.
+- `creator.css` — invite form, generated link, copy/calendar actions.
+- `location-pickers.css` — searchable country and city/timezone dialogs.
+- `date-picker.css` — calendar grid and date navigation.
+- `time-picker.css` — desktop clock dials and mobile touch wheels.
+- `calendar.css` — calendar invite modal, duration slider, provider/fallback actions.
+- `install-prompt.css` — PWA installation banner.
+
+### JavaScript
+
+- `shared.js` — shared DOM references, state, date helpers, timezone conversion.
+- `install-prompt.js` — PWA installation lifecycle.
+- `time-picker.js` / `date-picker.js` — time and date picker behavior.
+- `location-pickers.js` — country/city search and custom select triggers.
+- `calendar.js` — calendar provider integration and ICS fallback.
+- `clock.js` — clock rendering, countdown, manual timezone behavior.
+- `examples.js` — mobile examples accordion.
+- `select-controls.js` — generic native/custom select interaction behavior.
+- `creator.js` — invite URL generation and feature orchestration.
+- `app.js` — final route-aware startup entry point.
+
+Script order in `index.php` is intentional: `shared.js` must load first and `app.js` last.
+
 ## URL format
 ```text
 https://whenn.cc/{countryOrcountrycode}
