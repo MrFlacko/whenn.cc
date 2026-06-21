@@ -36,6 +36,8 @@ It uses the IP address of the person accessing the website to estimate their tim
 ## Data source
 Country data is based on the excellent [mledoze/countries](https://github.com/mledoze/countries) dataset.
 
+Calendar invite options are powered by [add2cal/add-to-calendar-button](https://github.com/add2cal/add-to-calendar-button) v2.14.0.
+
 ## URL format
 ```text
 https://whenn.cc/{countryOrcountrycode}
