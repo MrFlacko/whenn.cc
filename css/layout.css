@@ -322,12 +322,13 @@
 /* 6. Tablet: collapse the hero to a single column. */
 @media (max-width:900px){
     .hero{
-        grid-template-columns:1fr;
+        /* Allow wide clock content to shrink instead of expanding the page. */
+        grid-template-columns:minmax(0, 1fr);
     }
 
     .hero-copy{
-            text-align:center;
-        }
+        text-align:center;
+    }
 
     .intro{
         margin-left:auto;
@@ -338,37 +339,37 @@
 /* Mobile: reorder homepage sections and tighten hero/help spacing. */
 @media (max-width:620px){
     .topbar{
-            height:auto;
-            padding:12px 18px 0;
-            align-items:flex-start;
-            flex-direction:row;
-        }
+        height:auto;
+        padding:12px 18px 0;
+        align-items:flex-start;
+        flex-direction:row;
+    }
 
     .page{
-            padding:8px 18px 18px;
-        }
+        padding:8px 18px 18px;
+    }
 
     .home-page .page{
-            display:grid;
-            gap:14px;
-        }
+        display:grid;
+        gap:14px;
+    }
 
     .home-page .hero{
-            display:contents;
-        }
+        display:contents;
+    }
 
     .home-page .hero-copy{
-            order:2;
-        }
+        order:2;
+    }
 
     .hero-copy .eyebrow{
-            display:none;
-        }
+        display:none;
+    }
 
     .hero-copy{
-            width:100%;
-            padding:0 2px;
-        }
+        width:100%;
+        padding:0 2px;
+    }
 
     .home-page h1,
     .has-event h1{
@@ -384,44 +385,44 @@
     }
 
     .mini-help{
-            display:flex;
-            flex-wrap:nowrap;
-            gap:4px;
-            justify-content:stretch;
-            width:100%;
-            align-items:stretch;
-        }
+        display:flex;
+        flex-wrap:nowrap;
+        gap:4px;
+        justify-content:stretch;
+        width:100%;
+        align-items:stretch;
+    }
 
     .mini-help span{
-            display:grid;
-            grid-template-columns:22px minmax(0, 1fr);
-            align-items:center;
-            justify-content:center;
-            flex:1 1 0;
-            min-width:0;
-            width:100%;
-            min-height:36px;
-            gap:6px;
-            padding:0 8px;
-            font-size:11px;
-            line-height:1;
-            white-space:nowrap;
-            text-align:center;
-            overflow:hidden;
-        }
+        display:grid;
+        grid-template-columns:22px minmax(0, 1fr);
+        align-items:center;
+        justify-content:center;
+        flex:1 1 0;
+        min-width:0;
+        width:100%;
+        min-height:36px;
+        gap:6px;
+        padding:0 8px;
+        font-size:11px;
+        line-height:1;
+        white-space:nowrap;
+        text-align:center;
+        overflow:hidden;
+    }
 
     .mini-help strong{
-            width:22px;
-            height:22px;
-            font-size:11px;
-            flex:0 0 22px;
-        }
+        width:22px;
+        height:22px;
+        font-size:11px;
+        flex:0 0 22px;
+    }
 
     .mini-help em{
-            min-width:0;
-            font-size:11px;
-            text-align:left;
-        }
+        min-width:0;
+        font-size:11px;
+        text-align:left;
+    }
 
     .section-heading h2{
         font-size:16px;
