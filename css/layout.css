@@ -1,0 +1,429 @@
+/**
+ * layout.css
+ *
+ * Page shell, header, hero grid, shared card/popup shells, and cross-component responsive layout. Shared selectors spanning several components belong here to prevent duplicated declarations and specificity drift.
+ *
+ * Sections:
+ * 1. Header/navigation
+ * 2. Main page and hero grid
+ * 3. Intro/help content
+ * 4. Shared card and heading shells
+ * 5. Shared modal backdrop/panel
+ * 6. Responsive page reflow
+ *
+ * Troubleshooting:
+ * - If an entire section is misplaced, inspect this file before its internals.
+ * - Only cross-component layout belongs here; feature details stay elsewhere.
+ */
+
+/* 1. Header shell and navigation pills. */
+.topbar{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:18px;
+    width:min(1320px, 100%);
+    height:48px;
+    margin:0 auto;
+    padding:0 32px;
+}
+
+.brand{
+    display:inline-flex;
+    align-items:center;
+    gap:10px;
+    min-height:38px;
+    padding:0 12px;
+    border:1px solid rgba(53,194,165,.18);
+    border-radius:999px;
+    background:linear-gradient(180deg, rgba(28,37,45,.92), rgba(17,22,29,.86));
+    box-shadow:0 10px 22px rgba(0,0,0,.18);
+    color:var(--text);
+    font-size:15px;
+    font-weight:900;
+    text-decoration:none;
+    transition:
+        transform .16s ease,
+        border-color .18s ease,
+        box-shadow .22s ease,
+        background .22s ease,
+        color .18s ease;
+}
+
+.brand::after{
+    content:"Home";
+    display:inline-flex;
+    align-items:center;
+    min-height:22px;
+    padding:0 8px;
+    border-radius:999px;
+    background:rgba(53,194,165,.14);
+    color:var(--accent);
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    transition:background-color .18s ease, color .18s ease, transform .18s ease;
+}
+
+.brand:hover{
+    transform:translateY(-1px);
+    border-color:rgba(53,194,165,.34);
+    background:linear-gradient(180deg, rgba(31,42,50,.96), rgba(18,25,33,.9));
+    box-shadow:
+        0 14px 26px rgba(0,0,0,.24),
+        0 0 0 1px rgba(53,194,165,.08);
+}
+
+.brand:hover::after{
+    background:rgba(53,194,165,.24);
+    color:#d9fff7;
+    transform:translateX(1px);
+}
+
+.brand:active{
+    transform:translateY(0);
+}
+
+/* 2. Main content width and desktop two-column hero. */
+.page{
+    width:min(1320px, 100%);
+    margin:0 auto;
+    padding:14px 32px 18px;
+}
+
+.hero{
+    display:grid;
+    grid-template-columns:minmax(360px, 1fr) minmax(460px, 560px);
+    column-gap:16px;
+    row-gap:14px;
+    align-items:start;
+    justify-content:center;
+}
+
+.hero-copy{
+    grid-column:1;
+    width:100%;
+    text-align:left;
+}
+
+/* Header link styling lives with the page shell rather than global foundations. */
+.github-link-card{
+    margin-left:auto;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    gap:6px;
+    min-height:38px;
+    padding:0 12px;
+    border:1px solid rgba(53,194,165,.18);
+    border-radius:999px;
+    background:linear-gradient(180deg, rgba(28,37,45,.92), rgba(17,22,29,.86));
+    box-shadow:0 10px 22px rgba(0,0,0,.18);
+    color:var(--accent);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+    text-decoration:none;
+    line-height:1;
+    transition:transform .16s ease, border-color .18s ease, box-shadow .22s ease, background .22s ease, color .18s ease;
+}
+
+.github-link-card img{ width:15px; height:15px; display:block; opacity:.95; }
+.github-link-card:hover{
+    transform:translateY(-1px);
+    border-color:rgba(53,194,165,.34);
+    background:linear-gradient(180deg, rgba(31,42,50,.96), rgba(18,25,33,.9));
+    box-shadow:0 14px 26px rgba(0,0,0,.24), 0 0 0 1px rgba(53,194,165,.08);
+    color:#d9fff7;
+}
+.github-link-card:hover img{ opacity:1; }
+.github-link-card:active{ transform:translateY(0); }
+
+/* Route-wide heading and introduction sizing. */
+.home-page h1,
+.has-event h1{
+    font-size:clamp(38px, 4vw, 54px);
+    line-height:1;
+}
+
+.home-page .intro,
+.has-event .intro{
+    margin-top:10px;
+    color:var(--muted);
+    font-size:14px;
+}
+
+/* Large desktop: increase body-copy readability without changing grid geometry. */
+@media (min-width:1000px){
+    .home-page .intro,
+    .has-event .intro{
+        font-size:19px;
+        line-height:1.52;
+        margin-top:10px;
+    }
+}
+
+/* 3. Three-step helper pills beneath the introduction. */
+.mini-help{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:18px;
+}
+
+.mini-help span{
+    display:grid;
+    grid-template-columns:24px auto;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    align-items:center;
+    gap:10px;
+    border:1px solid var(--line);
+    border-radius:999px;
+    background:linear-gradient(180deg, rgba(28,34,45,.88), rgba(18,23,31,.78));
+    color:var(--muted);
+    padding:0 16px 0 12px;
+    font-size:13px;
+    font-weight:800;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.02);
+}
+
+.mini-help em{
+    color:#cfd6e2;
+    font-size:13px;
+    font-style:normal;
+    font-weight:850;
+    line-height:1;
+}
+
+.mini-help strong{
+    display:grid;
+    place-items:center;
+    width:24px;
+    height:24px;
+    border-radius:999px;
+    background:linear-gradient(180deg, #48d7bb, #2cae94);
+    color:#08211c;
+    font-size:11px;
+    font-weight:900;
+    line-height:1;
+    padding:0;
+    font-variant-numeric:tabular-nums;
+    text-align:center;
+    box-shadow:0 0 0 1px rgba(72,215,187,.16), 0 4px 12px rgba(44,174,148,.18);
+}
+
+/* 4. Visual shell shared by major content cards. */
+.clock-card,
+.creator{
+    border:1px solid rgba(255,255,255,.08);
+    border-radius:8px;
+    background:rgba(25,30,39,.9);
+    box-shadow:0 22px 60px rgba(0,0,0,.28);
+}
+
+/* Shared heading structure; feature files can add local spacing. */
+.examples .section-heading{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    justify-content:flex-start;
+    gap:4px;
+}
+
+.section-heading{
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:4px;
+    margin-bottom:10px;
+}
+
+.eyebrow{
+    margin:0 0 9px;
+    color:var(--accent);
+    font-size:11px;
+    font-weight:900;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+}
+
+.section-heading .eyebrow{
+    margin:0;
+}
+
+.section-heading h2{
+    font-size:15px;
+    font-weight:900;
+}
+
+.examples .section-heading h2,
+.creator .section-heading h2{
+    font-size:15px;
+}
+
+/* Desktop event-route refinements. */
+@media (min-width:901px){
+    .location-clock .hero-copy h1{
+            line-height:.97;
+        }
+
+    .location-clock .hero-copy .intro{
+            margin-top:8px;
+            line-height:1.46;
+        }
+
+    .location-clock .hero-copy .mini-help{
+            margin-top:14px;
+        }
+}
+
+/* 5. Shared overlay and panel surface for all first-party dialogs. */
+.date-popover,
+.time-popover,
+.calendar-popover,
+.country-picker{
+    position:fixed;
+    inset:0;
+    z-index:50;
+    display:none;
+    place-items:center;
+    background:rgba(5,8,12,.58);
+    padding:18px;
+    overscroll-behavior:contain;
+}
+
+.date-popover.is-open,
+.time-popover.is-open,
+.calendar-popover.is-open,
+.country-picker.is-open{
+    display:grid;
+}
+
+.date-popover-panel,
+.time-popover-panel,
+.calendar-popover-panel,
+.country-picker-panel{
+    position:relative;
+    width:min(760px, 100%);
+    border:1px solid rgba(255,255,255,.1);
+    border-radius:8px;
+    background:
+        linear-gradient(180deg, rgba(30,37,49,.98), rgba(18,24,33,.98));
+    padding:18px;
+    box-shadow:
+        0 30px 90px rgba(0,0,0,.45),
+        inset 0 1px 0 rgba(255,255,255,.04);
+}
+
+/* 6. Tablet: collapse the hero to a single column. */
+@media (max-width:900px){
+    .hero{
+        grid-template-columns:1fr;
+    }
+
+    .hero-copy{
+            text-align:center;
+        }
+
+    .intro{
+        margin-left:auto;
+        margin-right:auto;
+    }
+}
+
+/* Mobile: reorder homepage sections and tighten hero/help spacing. */
+@media (max-width:620px){
+    .topbar{
+            height:auto;
+            padding:12px 18px 0;
+            align-items:flex-start;
+            flex-direction:row;
+        }
+
+    .page{
+            padding:8px 18px 18px;
+        }
+
+    .home-page .page{
+            display:grid;
+            gap:14px;
+        }
+
+    .home-page .hero{
+            display:contents;
+        }
+
+    .home-page .hero-copy{
+            order:2;
+        }
+
+    .hero-copy .eyebrow{
+            display:none;
+        }
+
+    .hero-copy{
+            width:100%;
+            padding:0 2px;
+        }
+
+    .home-page h1,
+    .has-event h1{
+        font-size:22px;
+        line-height:1.06;
+    }
+
+    .home-page .intro,
+    .has-event .intro{
+        font-size:12px;
+        line-height:1.42;
+        margin-top:8px;
+    }
+
+    .mini-help{
+            display:flex;
+            flex-wrap:nowrap;
+            gap:4px;
+            justify-content:stretch;
+            width:100%;
+            align-items:stretch;
+        }
+
+    .mini-help span{
+            display:grid;
+            grid-template-columns:22px minmax(0, 1fr);
+            align-items:center;
+            justify-content:center;
+            flex:1 1 0;
+            min-width:0;
+            width:100%;
+            min-height:36px;
+            gap:6px;
+            padding:0 8px;
+            font-size:11px;
+            line-height:1;
+            white-space:nowrap;
+            text-align:center;
+            overflow:hidden;
+        }
+
+    .mini-help strong{
+            width:22px;
+            height:22px;
+            font-size:11px;
+            flex:0 0 22px;
+        }
+
+    .mini-help em{
+            min-width:0;
+            font-size:11px;
+            text-align:left;
+        }
+
+    .section-heading h2{
+        font-size:16px;
+    }
+}

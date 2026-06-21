@@ -1,0 +1,206 @@
+/**
+ * forms.css
+ *
+ * Reusable labels, inputs, selects, textareas, buttons, focus states, custom select triggers, and shared action rows. Component-specific controls override these foundations in their own files.
+ *
+ * Sections:
+ * 1. Font inheritance, labels, and generic buttons
+ * 2. Shared field surfaces and focus states
+ * 3. Custom select trigger/native select pairing
+ * 4. Shared picker action row
+ * 5. Mobile touch sizing
+ *
+ * Troubleshooting:
+ * - Country/city selects are visually replaced by generated buttons; inspect both.
+ * - Feature buttons should override these base rules in their own stylesheet.
+ */
+
+/* 1. Normalize form typography and generic controls. */
+button,
+select,
+input{
+    font:inherit;
+}
+
+label{
+    display:grid;
+    gap:5px;
+    color:var(--muted);
+    font-size:12px;
+    font-weight:850;
+}
+
+button{
+    min-height:36px;
+    border:0;
+    border-radius:8px;
+    background:var(--accent);
+    color:#071412;
+    padding:0 16px;
+    cursor:pointer;
+    font-weight:900;
+    transition:
+        transform .16s ease,
+        background-color .18s ease,
+        box-shadow .22s ease,
+        border-color .18s ease;
+}
+
+button:hover{
+    background:var(--accent-strong);
+    transform:translateY(-1px);
+}
+
+.date-picker-button span,
+.time-picker-button span{
+    color:var(--accent);
+    font-size:19px;
+}
+
+.date-picker-button strong,
+.time-picker-button strong{
+    font-weight:850;
+}
+
+/* 2. Shared dark field surface used by native and custom controls. */
+select,
+input,
+textarea,
+.date-picker-button,
+.time-picker-button,
+.country-select-button{
+    width:100%;
+    min-height:36px;
+    border:1px solid var(--line);
+    border-radius:8px;
+    background:#12161d;
+    color:var(--text);
+    padding:0 11px;
+    outline:none;
+    transition:
+        transform .16s ease,
+        border-color .18s ease,
+        box-shadow .22s ease,
+        background-color .18s ease;
+}
+
+textarea{
+    min-height:104px;
+    padding:11px;
+    resize:vertical;
+    font:inherit;
+    line-height:1.45;
+}
+
+/* These grouped states keep all field types visually consistent. */
+select:hover,
+.date-picker-button:hover,
+.time-picker-button:hover,
+.country-select-button:hover{
+    border-color:rgba(53,194,165,.42);
+    background:#151b24;
+    box-shadow:0 0 0 3px rgba(53,194,165,.1);
+    transform:translateY(-1px);
+}
+
+select.is-active,
+input:focus,
+input:focus-visible,
+textarea:focus,
+textarea:focus-visible,
+.date-picker-button:focus-visible,
+.time-picker-button:focus-visible,
+.country-select-button:focus-visible{
+    border-color:var(--accent);
+    box-shadow:0 0 0 3px rgba(53,194,165,.16);
+}
+
+.date-picker-button,
+.time-picker-button,
+.country-select-button{
+    display:flex;
+    align-items:center;
+    justify-content:flex-start;
+    gap:9px;
+    cursor:pointer;
+}
+
+/* 3. location-pickers.js inserts this visible trigger before each hidden select. */
+.country-select-button{
+    position:relative;
+    justify-content:space-between;
+    background:#12161d;
+    color:var(--text);
+    text-align:left;
+}
+
+.country-select-button::after{
+    content:"";
+    width:7px;
+    height:7px;
+    flex:0 0 auto;
+    margin-left:10px;
+    border-right:2px solid currentColor;
+    border-bottom:2px solid currentColor;
+    opacity:.82;
+    transform:translateY(-2px) rotate(45deg);
+}
+
+.country-select-button span{
+    min-width:0;
+    overflow:hidden;
+    text-overflow:ellipsis;
+    white-space:nowrap;
+}
+
+/* Native state remains in the form even though the custom trigger is visible. */
+.country-native-select{
+    position:absolute;
+    width:1px;
+    height:1px;
+    margin:-1px;
+    padding:0;
+    border:0;
+    clip:rect(0 0 0 0);
+    clip-path:inset(50%);
+    overflow:hidden;
+    white-space:nowrap;
+}
+
+/* 4. Shared dialog footer used by both date and time pickers. */
+.picker-actions{
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:10px;
+    margin-top:14px;
+    padding-top:14px;
+    border-top:1px solid rgba(255,255,255,.07);
+}
+
+.picker-actions button{
+    min-height:44px;
+    font-size:16px;
+}
+
+/* 5. Mobile: larger action targets and readable field text. */
+@media (max-width:620px){
+    .picker-actions{
+            margin-top:14px;
+            padding-top:12px;
+        }
+
+    .picker-actions button{
+            min-height:46px;
+            border-radius:8px;
+        }
+
+    select,
+        .date-picker-button,
+        .time-picker-button{
+            font-size:14px;
+        }
+
+    label{
+        font-size:13px;
+    }
+}
