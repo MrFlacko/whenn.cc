@@ -1353,6 +1353,18 @@ button:hover{
     font-size:14px;
 }
 
+.calendar-provider{
+    min-height:44px;
+}
+
+.calendar-provider[hidden]{
+    display:none;
+}
+
+.calendar-provider .calendar-download-button{
+    width:100%;
+}
+
 .date-popover-panel{
     width:min(440px, 100%);
 }

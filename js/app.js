@@ -51,6 +51,10 @@ const calendarName = document.getElementById("calendarName");
 const calendarDescription = document.getElementById("calendarDescription");
 const calendarDuration = document.getElementById("calendarDuration");
 const calendarDurationOutput = document.getElementById("calendarDurationOutput");
+const calendarLibraryScript = document.getElementById("calendarLibraryScript");
+const calendarProvider = document.getElementById("calendarProvider");
+const calendarOpenButton = document.getElementById("calendarOpenButton");
+const calendarDownloadFallback = document.getElementById("calendarDownloadFallback");
 const calendarCountry = document.getElementById("calendarCountry");
 const calendarCity = document.getElementById("calendarCity");
 const calendarDate = document.getElementById("calendarDate");
@@ -1060,6 +1064,109 @@ function updateCalendarDuration() {
     calendarDuration.style.setProperty("--duration-progress", `${progress}%`);
 }
 
+function formatZonedCalendarPart(date, timezone, type) {
+    const options = type === "date"
+        ? { timeZone: timezone, year: "numeric", month: "2-digit", day: "2-digit" }
+        : { timeZone: timezone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" };
+    const parts = new Intl.DateTimeFormat("en-CA", options).formatToParts(date);
+    const values = Object.fromEntries(parts.map((part) => [part.type, part.value]));
+
+    return type === "date"
+        ? `${values.year}-${values.month}-${values.day}`
+        : `${values.hour}:${values.minute}`;
+}
+
+function calendarProviderDescription(inviteUrl) {
+    const description = calendarDescription.value.trim().replace(/\r?\n/g, "[br]");
+    const invite = inviteUrl ? `[url]${inviteUrl}|Open whenn.cc invite[/url]` : "";
+
+    return [description, invite].filter(Boolean).join("[br][br]");
+}
+
+function calendarFilename(name) {
+    return name
+        .normalize("NFD")
+        .replace(/\p{Diacritic}/gu, "")
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "") || "calendar-invite";
+}
+
+function calendarProviderConfig() {
+    const details = getCalendarEventDetails();
+
+    if (!details) {
+        return null;
+    }
+
+    const name = calendarName.value.trim() || calendarDefaultName || `Event in ${details.zone.label}`;
+    const localStartDate = dateInput.value;
+    const localStartTime = timeInput.value;
+    const localEndDate = formatZonedCalendarPart(details.end, details.zone.timezone, "date");
+    const localEndTime = formatZonedCalendarPart(details.end, details.zone.timezone, "time");
+    const repeatedHour =
+        getTimeZoneOffset(details.end, details.zone.timezone) <
+        getTimeZoneOffset(details.start, details.zone.timezone);
+    const providerTimezone = repeatedHour ? "UTC" : details.zone.timezone;
+
+    return {
+        name,
+        description: calendarProviderDescription(details.inviteUrl),
+        startDate: repeatedHour ? formatZonedCalendarPart(details.start, "UTC", "date") : localStartDate,
+        startTime: repeatedHour ? formatZonedCalendarPart(details.start, "UTC", "time") : localStartTime,
+        endDate: repeatedHour ? formatZonedCalendarPart(details.end, "UTC", "date") : localEndDate,
+        endTime: repeatedHour ? formatZonedCalendarPart(details.end, "UTC", "time") : localEndTime,
+        timeZone: providerTimezone,
+        location: details.location,
+        iCalFileName: calendarFilename(name),
+        options: ["Apple", "Google", "iCal", "Microsoft365", "Outlook.com", "Yahoo"],
+        optionsMobile: ["Apple", "Google", "iCal", "Microsoft365", "Outlook.com"],
+        listStyle: "modal",
+        lightMode: "dark",
+        hideCheckmark: true
+    };
+}
+
+async function openCalendarChooser() {
+    const config = calendarProviderConfig();
+
+    if (!config || typeof window.atcb_action !== "function") {
+        downloadCalendarInvite();
+        return;
+    }
+
+    calendarOpenButton.disabled = true;
+    calendarOpenButton.textContent = "Opening…";
+
+    try {
+        await window.atcb_action(config, calendarOpenButton);
+    } catch (error) {
+        console.error("Calendar chooser failed; using ICS fallback.", error);
+        downloadCalendarInvite();
+    } finally {
+        calendarOpenButton.disabled = false;
+        calendarOpenButton.textContent = "Open Calendar";
+    }
+}
+
+function initCalendarProvider() {
+    function enableCalendarProvider() {
+        if (typeof window.atcb_action !== "function") {
+            return;
+        }
+
+        calendarProvider.hidden = false;
+        calendarDownloadFallback.hidden = true;
+    }
+
+    if (typeof window.atcb_action === "function") {
+        enableCalendarProvider();
+        return;
+    }
+
+    calendarLibraryScript?.addEventListener("load", enableCalendarProvider, { once: true });
+}
+
 function formatCalendarTime(value) {
     const [hour, minute] = value.split(":").map(Number);
     const period = hour >= 12 ? "PM" : "AM";
@@ -1121,25 +1228,24 @@ function formatIcsUtc(date) {
 
 function foldIcsLine(line) {
     const chunks = [];
-    let remaining = line;
+    const encoder = new TextEncoder();
+    let current = "";
 
-    while (remaining.length > 73) {
-        chunks.push(remaining.slice(0, 73));
-        remaining = ` ${remaining.slice(73)}`;
+    for (const character of line) {
+        if (current && encoder.encode(`${current}${character}`).length > 73) {
+            chunks.push(current);
+            current = ` ${character}`;
+            continue;
+        }
+
+        current += character;
     }
 
-    chunks.push(remaining);
+    chunks.push(current);
     return chunks.join("\r\n");
 }
 
-function downloadCalendarInvite() {
-    const details = getCalendarEventDetails();
-
-    if (!details) {
-        return;
-    }
-
-    const name = calendarName.value.trim() || calendarDefaultName;
+function buildCalendarInviteContent(details, name) {
     const descriptionParts = [calendarDescription.value.trim()];
 
     if (details.inviteUrl) {
@@ -1166,16 +1272,27 @@ function downloadCalendarInvite() {
         "END:VEVENT",
         "END:VCALENDAR"
     ].filter(Boolean);
+
+    return `${lines.map(foldIcsLine).join("\r\n")}\r\n`;
+}
+
+function downloadCalendarInvite() {
+    const details = getCalendarEventDetails();
+
+    if (!details) {
+        return;
+    }
+
+    const name = calendarName.value.trim() || calendarDefaultName;
     const blob = new Blob(
-        [`${lines.map(foldIcsLine).join("\r\n")}\r\n`],
+        [buildCalendarInviteContent(details, name)],
         { type: "text/calendar;charset=utf-8" }
     );
     const url = URL.createObjectURL(blob);
     const download = document.createElement("a");
-    const filename = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "calendar-invite";
 
     download.href = url;
-    download.download = `${filename}.ics`;
+    download.download = `${calendarFilename(name)}.ics`;
     document.body.append(download);
     download.click();
     download.remove();
@@ -2232,6 +2349,7 @@ function initDatePicker() {
 function initCreator() {
     calendarPopover.inert = true;
     updateCalendarDuration();
+    initCalendarProvider();
     populateCountries();
     populateCities();
     populateManualTimezones();
@@ -2268,6 +2386,7 @@ function initCreator() {
     manualCitySelect.addEventListener("change", updateManualTimezone);
     currentTimeCopyButton.addEventListener("click", copyCurrentTimeLink);
     addToCalendarButton.addEventListener("click", openCalendarPopover);
+    calendarOpenButton.addEventListener("click", openCalendarChooser);
     calendarDuration.addEventListener("input", updateCalendarDuration);
     calendarPopoverClose.addEventListener("click", closeCalendarPopover);
     calendarPopover.addEventListener("click", (event) => {
@@ -2280,7 +2399,13 @@ function initCreator() {
         downloadCalendarInvite();
     });
     document.addEventListener("keydown", (event) => {
-        if (event.key === "Escape" && calendarPopover.classList.contains("is-open")) {
+        const providerChooserOpen = document.querySelector("[id^='atcb-customTrigger-']");
+
+        if (
+            event.key === "Escape" &&
+            calendarPopover.classList.contains("is-open") &&
+            !providerChooserOpen
+        ) {
             closeCalendarPopover();
         }
     });

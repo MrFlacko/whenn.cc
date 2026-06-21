@@ -227,6 +227,15 @@ $jsPath = __DIR__ . '/js/app.js';
     <link rel="apple-touch-icon" sizes="180x180" href="/images/icon-180.png">    
     <link rel="manifest" href="/json/manifest.json">
     <meta name="theme-color" content="#111318">
+    <script
+        id="calendarLibraryScript"
+        src="https://cdn.jsdelivr.net/npm/add-to-calendar-button@2.14.0"
+        integrity="sha384-aW6S8xE01iTMowDFmkE+uBtBsxO3Zrd1fa38ADkf1ufkaWkUyMdNPe7Ql9x0yQjy"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+        async
+        defer
+    ></script>
     <style>
         <?php readfile($cssPath); ?>
     </style>
@@ -508,7 +517,10 @@ foreach ($examples as $ex) {
                         </div>
                     </div>
 
-                    <button class="calendar-download-button" type="submit">Download Invite</button>
+                    <div class="calendar-provider" id="calendarProvider" hidden>
+                        <button class="calendar-download-button" id="calendarOpenButton" type="button">Open Calendar</button>
+                    </div>
+                    <button class="calendar-download-button" id="calendarDownloadFallback" type="submit">Download Invite</button>
                 </form>
             </div>
         </div>
