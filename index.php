@@ -227,6 +227,15 @@ $jsPath = __DIR__ . '/js/app.js';
     <link rel="apple-touch-icon" sizes="180x180" href="/images/icon-180.png">    
     <link rel="manifest" href="/json/manifest.json">
     <meta name="theme-color" content="#111318">
+    <script
+        id="calendarLibraryScript"
+        src="https://cdn.jsdelivr.net/npm/add-to-calendar-button@2.14.0"
+        integrity="sha384-aW6S8xE01iTMowDFmkE+uBtBsxO3Zrd1fa38ADkf1ufkaWkUyMdNPe7Ql9x0yQjy"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+        async
+        defer
+    ></script>
     <style>
         <?php readfile($cssPath); ?>
     </style>
@@ -440,14 +449,81 @@ foreach ($examples as $ex) {
                     </button>
                 </label>
 
-                <button type="submit" id="createCopyButton">Copy Invite Link</button>
-            </form>
+                <div class="link-note" id="resultPanel">
+                    <span>Try yourself:</span>
+                    <a id="createdLink" href="/"></a>
+                </div>
 
-            <div class="link-note" id="resultPanel">
-                <span>Try yourself:</span>
-                <a id="createdLink" href="/"></a>
-            </div>
+                <div class="creator-actions">
+                    <button class="calendar-button" type="button" id="addToCalendarButton">
+                        <span aria-hidden="true">＋</span>
+                        Add to Calendar
+                    </button>
+                    <button type="submit" id="createCopyButton">Copy Invite Link</button>
+                </div>
+            </form>
         </section>
+
+        <div class="calendar-popover" id="calendarPopover" aria-hidden="true">
+            <div class="calendar-popover-panel" role="dialog" aria-modal="true" aria-labelledby="calendarPopoverTitle">
+                <button class="popover-close" id="calendarPopoverClose" type="button" aria-label="Close calendar invite">×</button>
+
+                <div class="calendar-popover-header">
+                    <span class="eyebrow">Calendar invite</span>
+                    <h2 id="calendarPopoverTitle">Add this time to your calendar</h2>
+                    <p>The date, time, and timezone come directly from your invite.</p>
+                </div>
+
+                <div class="calendar-event-preview" aria-label="Calendar event details">
+                    <div>
+                        <span>Country</span>
+                        <strong id="calendarCountry">—</strong>
+                    </div>
+                    <div>
+                        <span>City</span>
+                        <strong id="calendarCity">—</strong>
+                    </div>
+                    <div>
+                        <span>Date</span>
+                        <strong id="calendarDate">—</strong>
+                    </div>
+                    <div>
+                        <span>Time</span>
+                        <strong id="calendarTime">—</strong>
+                        <small id="calendarTimezone"></small>
+                    </div>
+                </div>
+
+                <form class="calendar-form" id="calendarForm">
+                    <label>
+                        <span>Event name</span>
+                        <input id="calendarName" type="text" maxlength="120" placeholder="Meeting, stream, launch…" required>
+                    </label>
+
+                    <label>
+                        <span>Description <small>Optional</small></span>
+                        <textarea id="calendarDescription" rows="4" maxlength="2000" placeholder="Add any useful details…"></textarea>
+                    </label>
+
+                    <div class="calendar-duration">
+                        <div class="calendar-duration-heading">
+                            <label for="calendarDuration">Duration</label>
+                            <output id="calendarDurationOutput" for="calendarDuration">1 hour</output>
+                        </div>
+                        <input id="calendarDuration" type="range" min="15" max="480" step="15" value="60">
+                        <div class="calendar-duration-scale" aria-hidden="true">
+                            <span>15 min</span>
+                            <span>8 hours</span>
+                        </div>
+                    </div>
+
+                    <div class="calendar-provider" id="calendarProvider" hidden>
+                        <button class="calendar-download-button" id="calendarOpenButton" type="button">Open Calendar</button>
+                    </div>
+                    <button class="calendar-download-button" id="calendarDownloadFallback" type="submit">Download Invite</button>
+                </form>
+            </div>
+        </div>
 
         <div class="country-picker" id="countryPicker" aria-hidden="true">
             <div class="country-picker-panel" role="dialog" aria-modal="true" aria-labelledby="countryPickerTitle">
