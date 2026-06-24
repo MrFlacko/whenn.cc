@@ -20,11 +20,13 @@
 /** Renders one fixed instant in both the event timezone and the visitor timezone. */
 function renderConvertedTime(eventDate, timezone, displayLocation) {
     countdownPanel.hidden = false;
+    countdownKicker.textContent = "Countdown";
+    countdownTitle.textContent = "Starts in";
     countdownTarget = eventDate;
     renderCountdown();
     renderTimeDifference(eventDate, timezone);
-    eventTimeLabelEl.textContent = "Event Time";
-    localTimeLabelEl.textContent = "Your Time";
+    eventTimeLabelEl.textContent = "Event timezone";
+    localTimeLabelEl.textContent = "Your timezone";
     renderClockTime(eventTimeEl, eventDate, timezone);
     eventDateEl.textContent = eventDate.toLocaleDateString("en-US", {
         timeZone: timezone,
@@ -78,8 +80,8 @@ function renderError() {
     countdownTarget = null;
     countdownPanel.hidden = true;
     timeDifferenceEl.hidden = true;
-    eventTimeLabelEl.textContent = "Event Time";
-    localTimeLabelEl.textContent = "Your Time";
+    eventTimeLabelEl.textContent = "Event timezone";
+    localTimeLabelEl.textContent = "Your timezone";
     eventTimeEl.textContent = linkyData.error || "Invalid Link";
     eventDateEl.textContent = "Try the creator below, or check the spelling in the URL.";
     eventLocationEl.textContent = linkyData.city ? linkyData.city.replace(/[-_]+/g, " ") : "";
@@ -87,15 +89,12 @@ function renderError() {
     localDateEl.textContent = "";
 }
 
-/**
- * Reuses the event page clock while editing an existing event.
- * Homepage creation does not need this because no fixed event card is shown there.
- */
+/** Reuses the event page clock for the homepage preview and existing event edits. */
 function renderEventPreview() {
     const country = selectedCountry();
     const zone = selectedZone();
 
-    if (linkyData.hasEvent && country && zone && dateInput.value && timeInput.value) {
+    if (country && zone && dateInput.value && timeInput.value) {
         renderConvertedTime(
             dateFromZonedTime(dateInput.value, timeInput.value, zone.timezone),
             zone.timezone,
@@ -128,13 +127,15 @@ function renderLocationClock() {
     const now = new Date();
     countdownTarget = null;
     countdownPanel.hidden = false;
+    countdownKicker.textContent = "Live";
+    countdownTitle.textContent = "Updating now";
     countdownDays.textContent = "--";
     countdownHours.textContent = "--";
     countdownMinutes.textContent = "--";
     countdownSeconds.textContent = "--";
     renderTimeDifference(now, linkyData.timezone);
-    eventTimeLabelEl.textContent = "Current Time";
-    localTimeLabelEl.textContent = "Your Time";
+    eventTimeLabelEl.textContent = "Location timezone";
+    localTimeLabelEl.textContent = "Your timezone";
     renderClockTime(eventTimeEl, now, linkyData.timezone, true);
     eventDateEl.textContent = now.toLocaleDateString("en-US", {
         timeZone: linkyData.timezone,
@@ -155,22 +156,6 @@ function renderLocationClock() {
     renderLocation(locationEl, activeTimezone, now, activeTimezone);
 }
 
-/** Renders the homepage's single browser-timezone clock. */
-function renderHomepageClock() {
-    const now = new Date();
-
-    eventTimeLabelEl.textContent = "Your Clock";
-    renderClockTime(eventTimeEl, now, activeTimezone, true);
-    eventDateEl.textContent = now.toLocaleDateString("en-US", {
-        timeZone: activeTimezone,
-        weekday: "short",
-        month: "short",
-        day: "numeric",
-        year: "numeric"
-    });
-    renderLocation(eventLocationEl, activeTimezone, now, activeTimezone);
-}
-
 // ============================================================================
 // MANUAL LOCAL TIMEZONE AND SHAREABLE CURRENT-TIME LINK
 // ============================================================================
@@ -186,33 +171,30 @@ function selectedManualZone() {
     return country?.zones.find((zone) => zone.slug === manualCitySelect.value) || country?.zones[0];
 }
 
-/**
- * Converts the selected/detected timezone into a location-clock URL.
- * UTC uses /ax/utc because that route exists in the country dataset.
- */
-function currentTimeRoute() {
-    const selectedCountry = selectedManualCountry();
-    const selectedZone = selectedManualZone();
-
-    if (
-        selectedCountry &&
-        selectedZone &&
-        selectedCountry.slug !== "detected-timezone"
-    ) {
-        return `/${selectedCountry.slug}/${selectedZone.slug}`;
-    }
-
-    const match = findZoneByTimezone(activeTimezone);
+/** Converts an IANA timezone into a valid location-clock URL. */
+function routeForTimezone(timezone) {
+    const match = findZoneByTimezone(timezone);
 
     if (match) {
         return `/${match.country.slug}/${match.zone.slug}`;
     }
 
-    if (activeTimezone === "UTC") {
-        return "/ax/utc";
+    if (timezone === "UTC") {
+        return "/utc";
     }
 
     return "";
+}
+
+/** Returns the live link for the event/location timezone, not the visitor timezone. */
+function currentTimeRoute() {
+    if (linkyData.timezone) {
+        return routeForTimezone(linkyData.timezone);
+    }
+
+    const zone = selectedZone();
+
+    return zone ? routeForTimezone(zone.timezone) : "";
 }
 
 /** Shows or hides the current-time link when a valid location route is available. */
@@ -226,18 +208,36 @@ function updateCurrentTimeLink() {
 
     const link = `${window.location.origin}${route}`;
     currentTimeLink.href = link;
-    currentTimeLink.textContent = link.replace(/^https?:\/\//, "");
+    currentTimeLink.textContent = link;
+    currentTimeLink.dataset.copyUrl = link;
+    currentTimeLink.setAttribute("aria-label", `Open live time link: ${link}`);
+    currentTimeLink.title = link;
     currentTimePanel.hidden = false;
 }
 
-/** Copies the current-time route and briefly changes the small button label. */
+/** Copies the current-time link and briefly changes the small button label. */
 async function copyCurrentTimeLink() {
-    if (!currentTimeLink.href) {
+    const link = currentTimeLink.dataset.copyUrl || currentTimeLink.href;
+
+    if (!link) {
         return;
     }
 
     try {
-        await navigator.clipboard.writeText(currentTimeLink.href);
+        if (navigator.clipboard?.writeText) {
+            await navigator.clipboard.writeText(link);
+        } else {
+            const textArea = document.createElement("textarea");
+            textArea.value = link;
+            textArea.setAttribute("readonly", "");
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.append(textArea);
+            textArea.select();
+            document.execCommand("copy");
+            textArea.remove();
+        }
+
         currentTimeCopyButton.textContent = "Copied!";
         currentTimeCopyButton.classList.add("is-success");
     } catch (error) {
@@ -245,7 +245,7 @@ async function copyCurrentTimeLink() {
     }
 
     setTimeout(() => {
-        currentTimeCopyButton.textContent = "Copy";
+        currentTimeCopyButton.textContent = "Copy link";
         currentTimeCopyButton.classList.remove("is-success");
     }, 900);
 }
@@ -266,7 +266,7 @@ function updateManualTimezone() {
     } else if (linkyData.isLocationClock) {
         renderLocationClock();
     } else {
-        renderHomepageClock();
+        renderEventPreview();
     }
 }
 

@@ -28,6 +28,13 @@ const alreadyInstalled =
 function hideInstallPromptForever() {
     localStorage.setItem("whennInstallDismissed", "1");
     installPromptBox.hidden = true;
+    document.body.classList.remove("has-install-prompt");
+}
+
+/** Shows the install banner without covering the bottom of the app UI. */
+function showInstallPrompt() {
+    installPromptBox.hidden = false;
+    document.body.classList.add("has-install-prompt");
 }
 
 // Chromium exposes the prompt as an event; saving it lets our own button trigger it.
@@ -38,7 +45,7 @@ window.addEventListener("beforeinstallprompt", (event) => {
 
     event.preventDefault();
     deferredInstallPrompt = event;
-    installPromptBox.hidden = false;
+    showInstallPrompt();
 });
 
 // The browser must call prompt() from a user gesture, hence this click handler.
@@ -61,7 +68,7 @@ const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
 if (isIos && !installDismissed && !alreadyInstalled) {
     installPromptText.textContent = "On iPhone: tap Share, then Add to Home Screen.";
     installButton.hidden = true;
-    installPromptBox.hidden = false;
+    showInstallPrompt();
 }
 
 installDismiss?.addEventListener("click", hideInstallPromptForever);

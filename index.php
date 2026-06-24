@@ -33,6 +33,15 @@ if (isset($parts[1], $parts[2]) && preg_match('/^\d{2}-\d{2}-\d{4}$/', $parts[1]
     $time = $parts[2];
 }
 
+/** Adds a file modification query to local assets so browsers do not reuse stale UI code. */
+function asset_url(string $path): string
+{
+    $file = __DIR__ . $path;
+    $version = is_file($file) ? substr(md5_file($file), 0, 12) : '1';
+
+    return $path . '?v=' . rawurlencode($version);
+}
+
 /** Normalizes user-facing names/codes into a comparison-only key. */
 function normalize_slug(string $value): string
 {
@@ -144,6 +153,7 @@ $countries = json_decode(
 $countryData = null;
 $countryKey = normalize_slug($countryInput);
 $countryOptions = [];
+$isUtcRoute = $countryKey === 'utc';
 
 foreach ($countries as $country) {
     $commonName = $country['name']['common'] ?? null;
@@ -186,8 +196,16 @@ foreach ($countries as $country) {
 
 usort($countryOptions, fn (array $a, array $b): int => strcasecmp($a['name'], $b['name']));
 
+if ($isUtcRoute) {
+    $countryData = [
+        'name' => ['common' => 'UTC'],
+        'cca2' => 'UTC',
+    ];
+    $city = 'UTC';
+}
+
 // Validate the current route and convert fixed local event time into UTC once.
-$timezone = resolve_timezone($city, $countryData);
+$timezone = $isUtcRoute ? 'UTC' : resolve_timezone($city, $countryData);
 $eventUtc = null;
 $eventError = null;
 $displayLocation = '';
@@ -230,8 +248,45 @@ if ($timezone) {
     $displayLocation = ucwords(str_replace(['-', '_'], ' ', $city));
 }
 
-if ($countryData) {
+if ($isUtcRoute) {
+    $displayLocation = 'UTC';
+} elseif ($countryData) {
     $displayLocation .= ($displayLocation !== '' ? ', ' : '') . $countryData['name']['common'];
+}
+
+// Route-aware copy keeps the page's purpose clear before any controls are used.
+if ($eventError) {
+    $pageEyebrow = 'Invalid link';
+    $pageHeading = 'This time link does not work.';
+    $pageIntro = 'Check the place, date and time in the URL, or create a new link below.';
+    $previewEyebrow = 'Unavailable';
+    $previewHeading = 'We could not load this time';
+    $creatorEyebrow = 'Start again';
+    $creatorHeading = 'Create a new time link';
+} elseif ($path === '') {
+    $pageEyebrow = 'Time link creator';
+    $pageHeading = 'One time. Every timezone.';
+    $pageIntro = 'Choose when and where. Share one link that shows everyone their local time.';
+    $previewEyebrow = 'Preview';
+    $previewHeading = 'Event time in both timezones';
+    $creatorEyebrow = 'Event details';
+    $creatorHeading = 'Choose the event time';
+} elseif ($isLocationClock) {
+    $pageEyebrow = 'Live clock';
+    $pageHeading = 'Current time in ' . ($displayLocation ?: 'this location');
+    $pageIntro = 'Compare this location with your local timezone.';
+    $previewEyebrow = 'Live comparison';
+    $previewHeading = 'Location time and your local time';
+    $creatorEyebrow = 'Plan ahead';
+    $creatorHeading = 'Create an event time';
+} else {
+    $pageEyebrow = 'Shared event';
+    $pageHeading = 'Here is when the event starts for you.';
+    $pageIntro = 'The original event time has been converted to your selected timezone.';
+    $previewEyebrow = 'Time conversion';
+    $previewHeading = 'Original time and your local time';
+    $creatorEyebrow = 'Create another';
+    $creatorHeading = 'Create a new event time';
 }
 
 ?>
@@ -249,21 +304,7 @@ if ($countryData) {
     <link rel="manifest" href="/json/manifest.json">
     <meta name="theme-color" content="#111318">
 
-    <!--
-        Styles load from general foundations into increasingly specific features.
-        Later files refine shared rules, so preserve this order when adding files.
-    -->
-    <link rel="stylesheet" href="/css/foundation.css">
-    <link rel="stylesheet" href="/css/layout.css">
-    <link rel="stylesheet" href="/css/forms.css">
-    <link rel="stylesheet" href="/css/examples.css">
-    <link rel="stylesheet" href="/css/clock.css">
-    <link rel="stylesheet" href="/css/creator.css">
-    <link rel="stylesheet" href="/css/location-pickers.css">
-    <link rel="stylesheet" href="/css/date-picker.css">
-    <link rel="stylesheet" href="/css/time-picker.css">
-    <link rel="stylesheet" href="/css/calendar.css">
-    <link rel="stylesheet" href="/css/install-prompt.css">
+    <link rel="stylesheet" href="<?= htmlspecialchars(asset_url('/css/site.css')) ?>">
 
     <script
         id="calendarLibraryScript"
@@ -276,14 +317,16 @@ if ($countryData) {
     ></script>
 </head>
 
-<body class="<?= $path !== '' ? 'has-event' . ($isLocationClock ? ' location-clock' : '') : 'home-page' ?>">
+<body class="<?= $eventError
+    ? 'has-event has-error'
+    : ($path !== '' ? 'has-event' . ($isLocationClock ? ' location-clock' : '') : 'home-page') ?>">
     <div class="install-prompt" id="installPrompt" hidden>
         <div>
             <strong>Install whenn.cc</strong>
             <span id="installPromptText">Add it to your home screen for quicker access.</span>
         </div>
 
-        <button type="button" id="installButton">Install</button>
+        <button type="button" id="installButton">Add app</button>
         <button type="button" id="installDismiss" aria-label="Dismiss">×</button>
     </div>
     <!-- PHP-to-JavaScript bridge: route flags plus country/timezone picker data. -->
@@ -305,22 +348,21 @@ if ($countryData) {
 
     <header class="topbar">
         <a class="brand" href="/" aria-label="Go to whenn.cc home">whenn.cc</a>
-        <a class="github-link-card"
-        href="https://github.com/MrFlacko/whenn.cc"
-        target="_blank"
-        rel="noopener"
-        aria-label="View source on GitHub">
-            <img src="https://cdn.simpleicons.org/github/ffffff" alt="" aria-hidden="true">
-            <span>Git</span>
-        </a>
+        <nav class="topbar-links" aria-label="Site links">
+            <a
+                href="https://github.com/MrFlacko/whenn.cc"
+                target="_blank"
+                rel="noopener"
+            >Source</a>
+        </nav>
     </header>
 
     <main class="page">
         <section class="hero">
-            <section class="examples examples-card" aria-label="Example times">
+            <section class="examples examples-card" aria-label="Example time links">
                 <div class="section-heading">
                     <p class="eyebrow">Examples</p>
-                    <h2>Try these links</h2>
+                    <h2>Not sure yet? Open an example</h2>
                 </div>
 
 <?php
@@ -358,33 +400,31 @@ foreach ($examples as $ex) {
                     </div>
                 </details>
 
-                <div class="examples-footer">
-<?php
-foreach ($examples as $ex) {
-    $href = sprintf('/%s/%s/%s/%s', $ex['country'], $ex['city'], $dateStr, $timeStr);
-    $displayUrl = htmlspecialchars($href);
-    $label = htmlspecialchars($ex['label']);
-    echo '<a href="' . $displayUrl . '"><span class="ex-label">' . $label . '</span><small class="ex-url">' . $displayUrl . '</small></a>' . "\n";
-}
-?>
-                </div>
             </section>
 
             <div class="hero-copy">
-                <p class="eyebrow">whenn.cc</p>
-                <h1>Share a time that makes sense everywhere.</h1>
-                <p class="intro">Create a clean link for a meeting, stream, launch, call, or anything else with a fixed time. Pick a country and city, set the date, then send one link that converts automatically for whoever opens it.</p>
-
-                <div class="mini-help" aria-label="How whenn.cc works">
-                    <span><strong>1</strong><em>Place</em></span>
-                    <span><strong>2</strong><em>Time</em></span>
-                    <span><strong>3</strong><em>Copy</em></span>
-                </div>
+                <p class="eyebrow"><?= htmlspecialchars($pageEyebrow) ?></p>
+                <h1>
+<?php if ($path === '' && !$eventError): ?>
+                    <span>One time.</span>
+                    <span class="hero-title-accent">Every timezone.</span>
+<?php else: ?>
+                    <?= htmlspecialchars($pageHeading) ?>
+<?php endif; ?>
+                </h1>
+                <p class="intro"><?= htmlspecialchars($pageIntro) ?></p>
             </div>
 
             <section class="clock-card" aria-label="Shared event preview">
-                <div class="clock-column">
-                    <span class="date-label" id="eventTimeLabel">Selected Time</span>
+                <div class="clock-card-heading">
+                    <div>
+                        <p class="eyebrow"><?= htmlspecialchars($previewEyebrow) ?></p>
+                        <h2><?= htmlspecialchars($previewHeading) ?></h2>
+                    </div>
+                </div>
+
+                <div class="clock-column event-clock-column">
+                    <span class="date-label" id="eventTimeLabel">Event timezone</span>
                     <div class="time" id="eventTime">Loading...</div>
                     <div class="date" id="eventDate"></div>
                     <div class="location" id="eventLocation"><?= htmlspecialchars($displayLocation) ?></div>
@@ -394,14 +434,23 @@ foreach ($examples as $ex) {
                     <span class="time-difference" id="timeDifference" hidden></span>
                 </div>
 
-                <div class="clock-column route-only">
-                    <span class="date-label" id="localTimeLabel">Your Time</span>
+                <div class="clock-column local-clock-column route-only">
+                    <span class="date-label" id="localTimeLabel">Your timezone</span>
                     <div class="time" id="localTime">Loading...</div>
                     <div class="date" id="localDate"></div>
                     <div class="location" id="location">Detecting location...</div>
                 </div>
 
                 <div class="timezone-control">
+                    <div class="timezone-control-heading">
+                        <span class="timezone-control-icon" aria-hidden="true">
+                            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path><path d="M3 12h2M19 12h2"></path></svg>
+                        </span>
+                        <span class="timezone-control-copy">
+                            <strong>Wrong timezone?</strong>
+                            <span>Choose the timezone you want to use.</span>
+                        </span>
+                    </div>
                     <label>
                         <span>Your country</span>
                         <select id="manualCountrySelect"></select>
@@ -414,16 +463,22 @@ foreach ($examples as $ex) {
                 </div>
 
                 <div class="current-time-link" id="currentTimePanel" hidden>
-                    <span>Your Time:</span>
+                    <span class="current-time-icon" aria-hidden="true">
+                        <svg viewBox="0 0 24 24"><path d="M7 17 17 7"></path><path d="M9 7h8v8"></path></svg>
+                    </span>
+                    <span class="current-time-copy">
+                        <strong>Share your local time</strong>
+                        <small>Copy a live clock for this timezone.</small>
+                        <button id="currentTimeCopyButton" type="button">Copy link</button>
+                    </span>
                     <a id="currentTimeLink" href="/"></a>
-                    <button id="currentTimeCopyButton" type="button">Copy</button>
                 </div>
 
                 <div class="countdown-inline" aria-label="Countdown to event">
                     <div class="countdown-heading">
-                        <span class="countdown-kicker">Countdown</span>
+                        <span class="countdown-kicker" id="countdownKicker">Countdown</span>
                         <div class="countdown-heading-row">
-                            <strong class="countdown-title">Event starts in</strong>
+                            <strong class="countdown-title" id="countdownTitle">Starts in</strong>
                         </div>
                     </div>
                     <div class="countdown-grid-compact">
@@ -451,52 +506,96 @@ foreach ($examples as $ex) {
 
         <section class="creator" aria-labelledby="creatorTitle">
             <div class="section-heading">
-                <p class="eyebrow">Creator</p>
-                <h2 id="creatorTitle">Create an Invite</h2>
+                <p class="eyebrow"><?= htmlspecialchars($creatorEyebrow) ?></p>
+                <h2 id="creatorTitle"><?= htmlspecialchars($creatorHeading) ?></h2>
+                <p class="section-description">Enter the date and time as shown in the event location.</p>
             </div>
 
             <form class="creator-form" id="creatorForm">
                 <label>
-                    <span>Country</span>
+                    <span><svg class="field-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M3 12h18"></path><path d="M12 3a15 15 0 0 1 0 18"></path><path d="M12 3a15 15 0 0 0 0 18"></path></svg>Event country</span>
                     <select id="countrySelect" required></select>
                 </label>
 
                 <label>
-                    <span>City / timezone</span>
+                    <span><svg class="field-icon" aria-hidden="true" viewBox="0 0 24 24"><path d="M20 10c0 5-8 11-8 11S4 15 4 10a8 8 0 1 1 16 0Z"></path><circle cx="12" cy="10" r="2.5"></circle></svg>Event city or timezone</span>
                     <select id="citySelect" required></select>
                 </label>
 
                 <label>
-                    <span>Date</span>
+                    <span><svg class="field-icon" aria-hidden="true" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18"></path><path d="M8 14h.01M12 14h.01M16 14h.01M8 18h.01M12 18h.01"></path></svg>Event date</span>
                     <input id="dateInput" type="hidden" required>
                     <button class="date-picker-button" id="datePickerButton" type="button">
-                        <span aria-hidden="true">📅</span>
                         <strong id="datePickerLabel">Select date</strong>
                     </button>
                 </label>
 
                 <label>
-                    <span>Time</span>
+                    <span><svg class="field-icon" aria-hidden="true" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"></circle><path d="M12 7v5l3 2"></path></svg>Event time</span>
                     <input id="timeInput" type="hidden" required>
                     <button class="time-picker-button" id="timePickerButton" type="button">
-                        <span aria-hidden="true">🕒</span>
                         <strong id="timePickerLabel">--:--</strong>
                     </button>
                 </label>
 
                 <div class="link-note" id="resultPanel">
-                    <span>Try yourself:</span>
+                    <span>Your link is ready</span>
                     <a id="createdLink" href="/"></a>
                 </div>
 
                 <div class="creator-actions">
                     <button class="calendar-button" type="button" id="addToCalendarButton">
-                        <span aria-hidden="true">＋</span>
-                        Add to Calendar
+                        <span aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="2"></rect><path d="M16 3v4M8 3v4M3 10h18M12 13v6M9 16h6"></path></svg></span>
+                        Calendar
                     </button>
-                    <button type="submit" id="createCopyButton">Copy Invite Link</button>
+                    <button type="submit" id="createCopyButton">Copy link</button>
                 </div>
             </form>
+
+            <div class="creator-guide" aria-label="Good to know about time links">
+                <div class="creator-guide-heading">
+                    <span>Good to know</span>
+                    <strong>Small details to make sharing better.</strong>
+                </div>
+                <div class="creator-guide-actions">
+                    <div class="creator-guide-entry">
+                        <button class="creator-guide-item" type="button" aria-pressed="false">
+                            <span class="creator-guide-face creator-guide-front">
+                                <strong>Local time</strong>
+                                <small>Tap to flip</small>
+                            </span>
+                            <span class="creator-guide-face creator-guide-back">
+                                <strong>Local time</strong>
+                                <span>One link opens in each person's own timezone, so nobody has to convert it manually.</span>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="creator-guide-entry">
+                        <button class="creator-guide-item" type="button" aria-pressed="false">
+                            <span class="creator-guide-face creator-guide-front">
+                                <strong>Calendar ready</strong>
+                                <small>Tap to flip</small>
+                            </span>
+                            <span class="creator-guide-face creator-guide-back">
+                                <strong>Calendar ready</strong>
+                                <span>The calendar invite is built from the event's place, date, and time, not the viewer's guess.</span>
+                            </span>
+                        </button>
+                    </div>
+                    <div class="creator-guide-entry">
+                        <button class="creator-guide-item" type="button" aria-pressed="false">
+                            <span class="creator-guide-face creator-guide-front">
+                                <strong>Easy fix</strong>
+                                <small>Tap to flip</small>
+                            </span>
+                            <span class="creator-guide-face creator-guide-back">
+                                <strong>Easy fix</strong>
+                                <span>If timezone detection is off, viewers can choose another city without making a new link.</span>
+                            </span>
+                        </button>
+                    </div>
+                </div>
+            </div>
         </section>
 
         <div class="calendar-popover" id="calendarPopover" aria-hidden="true">
@@ -736,11 +835,6 @@ foreach ($examples as $ex) {
                             <div class="clock-pin"></div>
                         </div>
 
-                        <div class="dial-stepper">
-                            <button type="button" id="hourDown">-</button>
-                            <button type="button" id="hourUp">+</button>
-                        </div>
-
                         <div class="ampm-toggle" id="ampmToggle" aria-label="AM or PM">
                             <button type="button" data-ampm="AM">AM</button>
                             <button type="button" data-ampm="PM">PM</button>
@@ -770,10 +864,6 @@ foreach ($examples as $ex) {
                                 <div class="clock-hand minute-hand" id="minuteHand"></div>
                                 <div class="clock-pin"></div>
                             </div>
-                            <div class="minute-nudges" aria-label="Adjust minute">
-                                <button type="button" id="minuteUp">+</button>
-                                <button type="button" id="minuteDown">-</button>
-                            </div>
                         </div>
 
                         <div class="minute-chips" aria-label="Quick minute choices">
@@ -797,17 +887,17 @@ foreach ($examples as $ex) {
         Classic deferred scripts share state; dependency order is intentional.
         shared.js must remain first and app.js must remain last.
     -->
-    <script src="/js/shared.js" defer></script>
-    <script src="/js/install-prompt.js" defer></script>
-    <script src="/js/time-picker.js" defer></script>
-    <script src="/js/date-picker.js" defer></script>
-    <script src="/js/location-pickers.js" defer></script>
-    <script src="/js/calendar.js" defer></script>
-    <script src="/js/clock.js" defer></script>
-    <script src="/js/examples.js" defer></script>
-    <script src="/js/select-controls.js" defer></script>
-    <script src="/js/creator.js" defer></script>
-    <script src="/js/app.js" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/shared.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/install-prompt.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/time-picker.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/date-picker.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/location-pickers.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/calendar.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/clock.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/examples.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/select-controls.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/creator.js')) ?>" defer></script>
+    <script src="<?= htmlspecialchars(asset_url('/js/app.js')) ?>" defer></script>
 
 </body>
 

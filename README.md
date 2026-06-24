@@ -62,17 +62,7 @@ The page is server-rendered by `index.php`, which imports feature-specific CSS a
 
 ### CSS
 
-- `foundation.css` — theme variables, document defaults, typography, accessibility.
-- `layout.css` — header, hero, shared cards, modal shells, page-level responsive layout.
-- `forms.css` — shared fields, buttons, custom select triggers, picker actions.
-- `examples.css` — desktop example links and mobile accordion.
-- `clock.css` — clocks, countdown, timezone controls, event/local comparison.
-- `creator.css` — invite form, generated link, copy/calendar actions.
-- `location-pickers.css` — searchable country and city/timezone dialogs.
-- `date-picker.css` — calendar grid and date navigation.
-- `time-picker.css` — desktop clock dials and mobile touch wheels.
-- `calendar.css` — calendar invite modal, duration slider, provider/fallback actions.
-- `install-prompt.css` — PWA installation banner.
+- `site.css` — the complete responsive visual system, including forms, clocks, pickers, dialogs, and install prompt.
 
 ### JavaScript
 

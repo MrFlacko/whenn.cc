@@ -42,7 +42,7 @@ function buildLink(country, zone) {
 // GENERATED LINK DISPLAY
 // ============================================================================
 
-/** Refreshes the clickable "Try yourself" preview beneath the creator fields. */
+/** Refreshes the shareable link shown beneath the creator fields. */
 function renderGeneratedLink() {
     const link = buildLink(selectedCountry(), selectedZone());
 
@@ -154,11 +154,35 @@ function setInitialFormValues() {
         countries.find((country) => country.code === "AU") ||
         countries[0];
     const defaultZone = linkedRoute?.zone || browserMatch?.zone || defaultCountry?.zones[0];
+    let defaultDate = toInputDate(now);
+    let defaultHour = now.getHours();
+    let defaultMinute = now.getMinutes();
 
-    dateInput.value = linkedRoute?.date || toInputDate(now);
+    if (!linkedRoute && !linkyData.isLocationClock && defaultZone) {
+        const nextHour = new Date(now.getTime() + (60 * 60 * 1000));
+        const parts = new Intl.DateTimeFormat("en-US", {
+            timeZone: defaultZone.timezone,
+            year: "numeric",
+            month: "2-digit",
+            day: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit",
+            hourCycle: "h23"
+        }).formatToParts(nextHour);
+        const value = (type) => parts.find((part) => part.type === type)?.value;
+
+        defaultDate = `${value("year")}-${value("month")}-${value("day")}`;
+        defaultHour = Number(value("hour"));
+        defaultMinute = Number(value("minute"));
+    }
+
+    dateInput.value = linkedRoute?.date || defaultDate;
     datePickerLabel.textContent = formatDateButton(dateInput.value);
     datePickerReadout.textContent = formatDateButton(dateInput.value);
-    setTimeValue(linkedRoute?.hour ?? now.getHours(), linkedRoute?.minute ?? now.getMinutes());
+    setTimeValue(
+        linkedRoute?.hour ?? defaultHour,
+        linkedRoute?.minute ?? defaultMinute
+    );
 
     if (defaultCountry) {
         countrySelect.value = defaultCountry.slug;
@@ -170,13 +194,11 @@ function setInitialFormValues() {
     }
 }
 
-/** Refreshes the generated URL and, on event pages, the large clock preview. */
+/** Refreshes the generated URL and the live recipient preview. */
 function updateCreator() {
     renderGeneratedLink();
 
-    if (linkyData.hasEvent) {
-        renderEventPreview();
-    }
+    renderEventPreview();
 }
 
 /** Copies the generated link and runs the short visual success animation. */
@@ -201,7 +223,7 @@ async function copyGeneratedLink() {
     }
 
     setTimeout(() => {
-        createCopyButton.textContent = "Copy Invite Link";
+        createCopyButton.textContent = "Copy link";
         createCopyButton.classList.remove("is-flashing");
         createCopyButton.classList.remove("is-success");
     }, 900);
@@ -237,7 +259,10 @@ function initCreator() {
         populateCities();
         updateCreator();
         renderEventPreview();
-        openLinkedSelect(citySelect);
+
+        if (!autoSelectOnlyCity(citySelect)) {
+            openLinkedSelect(citySelect);
+        }
     });
 
     citySelect.addEventListener("change", () => {
@@ -253,7 +278,10 @@ function initCreator() {
     manualCountrySelect.addEventListener("change", () => {
         populateCities(manualCountrySelect.value, manualCitySelect, manualCountries);
         updateManualTimezone();
-        openLinkedSelect(manualCitySelect);
+
+        if (!autoSelectOnlyCity(manualCitySelect)) {
+            openLinkedSelect(manualCitySelect);
+        }
     });
     manualCitySelect.addEventListener("change", updateManualTimezone);
     currentTimeCopyButton.addEventListener("click", copyCurrentTimeLink);

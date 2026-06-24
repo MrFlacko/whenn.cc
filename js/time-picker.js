@@ -26,6 +26,24 @@ function formatTimeValue(value) {
     return `${hour}:${minute}`;
 }
 
+/** Formats the modal preview using the active 12/24-hour display mode. */
+function formatPickerReadout() {
+    if (hourFormat === "24") {
+        return `${pad(pickerHour)}:${pad(pickerMinute)}`;
+    }
+
+    const hour = ((pickerHour + 11) % 12) + 1;
+    const period = pickerHour >= 12 ? "PM" : "AM";
+
+    return `${hour}:${pad(pickerMinute)} ${period}`;
+}
+
+/** Keeps the popup preview and main form label intentionally different. */
+function updatePickerReadouts() {
+    pickerReadout.textContent = formatPickerReadout();
+    timePickerLabel.textContent = formatTimeValue(timeInput.value);
+}
+
 /**
  * Single source of truth for picker time.
  * Handles day wrapping, then refreshes every desktop and mobile representation.
@@ -36,8 +54,7 @@ function setTimeValue(hour, minute) {
     pickerHour = Math.floor(normalized / 60);
     pickerMinute = normalized % 60;
     timeInput.value = `${pad(pickerHour)}:${pad(pickerMinute)}`;
-    timePickerLabel.textContent = formatTimeValue(timeInput.value);
-    pickerReadout.textContent = `${pad(pickerHour)}:${pad(pickerMinute)}`;
+    updatePickerReadouts();
     hourValue.textContent = hourFormat === "12" ? pad(((pickerHour + 11) % 12) + 1) : pad(pickerHour);
     minuteValue.textContent = pad(pickerMinute);
     hourHand.style.transform = `translateX(-50%) rotate(${hourFormat === "24" ? pickerHour * 15 : (pickerHour % 12) * 30}deg)`;
@@ -74,16 +91,26 @@ function setHourFormat(format) {
     hourFormat = format;
     hourDial.classList.toggle("hour-mode-12", format === "12");
     hourDial.classList.toggle("hour-mode-24", format === "24");
-    ampmToggle.classList.toggle("is-visible", format === "12");
-    mobileAmpmToggle.classList.toggle("is-hidden", format === "24");
-    mobileTimeOptions.classList.toggle("is-24-hour", format === "24");
+    ampmToggle.classList.toggle("is-disabled", format === "24");
+    mobileAmpmToggle.classList.toggle("is-disabled", format === "24");
     populateMobileHourWheel();
+
+    for (const button of ampmToggle.querySelectorAll("button")) {
+        button.disabled = format === "24";
+        button.setAttribute("aria-disabled", format === "24" ? "true" : "false");
+    }
+
+    for (const button of mobileAmpmToggle.querySelectorAll("button")) {
+        button.disabled = format === "24";
+        button.setAttribute("aria-disabled", format === "24" ? "true" : "false");
+    }
 
     for (const button of document.querySelectorAll("[data-hour-format]")) {
         button.classList.toggle("is-active", button.dataset.hourFormat === format);
     }
 
     setTimeValue(pickerHour, pickerMinute);
+    updatePickerReadouts();
     updateMobileWheels(true);
 }
 
@@ -684,6 +711,7 @@ function startDialDrag(event) {
 function syncPickerFromInput() {
     const [hour, minute] = (timeInput.value || "09:00").split(":").map(Number);
     setTimeValue(hour, minute);
+    updatePickerReadouts();
 }
 
 /** Opens the picker and refreshes wheel geometry after it becomes visible. */
@@ -693,7 +721,10 @@ function openTimePicker() {
     timePopover.inert = false;
     timePopover.classList.add("is-open");
     timePopover.setAttribute("aria-hidden", "false");
-    requestAnimationFrame(() => updateMobileWheels(true));
+    requestAnimationFrame(() => {
+        updatePickerReadouts();
+        updateMobileWheels(true);
+    });
 }
 
 /** Closes the picker, restores trigger focus, and releases page scroll. */
@@ -738,11 +769,6 @@ function initTimePicker() {
         updateCreator();
         renderEventPreview();
     });
-    document.getElementById("hourUp").addEventListener("click", () => setTimeValue(pickerHour + 1, pickerMinute));
-    document.getElementById("hourDown").addEventListener("click", () => setTimeValue(pickerHour - 1, pickerMinute));
-    document.getElementById("minuteUp").addEventListener("click", () => adjustMinute(1));
-    document.getElementById("minuteDown").addEventListener("click", () => adjustMinute(-1));
-
     for (const button of document.querySelectorAll("[data-hour-format]")) {
         button.addEventListener("click", () => setHourFormat(button.dataset.hourFormat));
     }

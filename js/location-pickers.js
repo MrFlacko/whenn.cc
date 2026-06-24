@@ -61,7 +61,9 @@ function syncCountryTrigger(select) {
     }
 
     const selected = countrySourceForSelect(select).find((country) => country.slug === select.value);
-    trigger.querySelector("span").textContent = selected?.name || "Choose a country";
+    const label = selected?.name || "Choose a country";
+    trigger.querySelector("span").textContent = label;
+    trigger.title = label;
 }
 
 /** Moves keyboard highlight to a country option and keeps it visible. */
@@ -121,6 +123,7 @@ function renderCountryOptions(query = "") {
         button.setAttribute("aria-selected", String(country.slug === selectedValue));
         button.classList.toggle("is-selected", country.slug === selectedValue);
         button.textContent = country.name;
+        button.title = country.name;
         button.addEventListener("click", () => chooseCountry(country));
         countryResults.append(button);
     }
@@ -258,6 +261,36 @@ function populateCities(countrySlug = countrySelect.value, select = citySelect, 
     syncCityTrigger(select);
 }
 
+/** Gives an auto-filled city trigger a short visual nudge. */
+function pulseCityTrigger(select) {
+    const trigger = select?._cityTrigger;
+
+    if (!trigger) {
+        return;
+    }
+
+    trigger.classList.remove("is-auto-filled");
+    trigger.getBoundingClientRect();
+    trigger.classList.add("is-auto-filled");
+}
+
+/**
+ * Countries with a single timezone do not need a second choice.
+ * Select it immediately and draw attention to the filled city field.
+ */
+function autoSelectOnlyCity(select) {
+    const zones = citySourceForSelect(select);
+
+    if (zones.length !== 1) {
+        return false;
+    }
+
+    select.value = zones[0].slug;
+    syncCityTrigger(select);
+    pulseCityTrigger(select);
+    return true;
+}
+
 /** Returns the correct zone list for creator vs manual-timezone city selects. */
 function citySourceForSelect(select) {
     const source = select === manualCitySelect ? manualCountries : countries;
@@ -278,7 +311,9 @@ function syncCityTrigger(select) {
     }
 
     const selected = citySourceForSelect(select).find((zone) => zone.slug === select.value);
-    trigger.querySelector("span").textContent = selected?.label || "Choose a city";
+    const label = selected?.label || "Choose a city";
+    trigger.querySelector("span").textContent = label;
+    trigger.title = selected ? `${selected.label} · ${selected.timezone}` : label;
 }
 
 /** Moves keyboard highlight to a city option and keeps it visible. */
@@ -338,6 +373,7 @@ function renderCityOptions(query = "") {
         button.setAttribute("aria-selected", String(zone.slug === selectedValue));
         button.classList.toggle("is-selected", zone.slug === selectedValue);
         button.textContent = zone.label;
+        button.title = `${zone.label} · ${zone.timezone}`;
         button.addEventListener("click", () => chooseCity(zone));
         cityResults.append(button);
     }
